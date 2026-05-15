@@ -1,0 +1,16 @@
+# Ignore uploaded files and system artifacts
+uploads/
+*.log
+*.cache
+*.bak
+*.tmp
+.DS_Store
+Thumbs.db
+
+# Ignore editor settings
+.vscode/
+.idea/
+
+# Ignore OS files
+*.swp
+*.swo
