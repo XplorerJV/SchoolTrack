@@ -11,12 +11,7 @@ define('DB_PORT', '3306');
 // App Config
 define('APP_NAME', 'SchoolTrack');
 define('APP_URL', 'http://localhost/school'); // Change to your URL
-if (!defined('APP_URL')) {
-    define('APP_URL', 'http://localhost/school');
 define('APP_VERSION', '1.0.0');
-} else {
-    define('APP_VERSION', '1.0.0');
-}
 
 define('UPLOADS_DIR', __DIR__ . '/uploads');
 define('UPLOADS_URL', APP_URL . '/uploads');

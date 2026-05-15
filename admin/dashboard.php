@@ -1,9 +1,8 @@
 <?php
 $pageTitle = 'Admin Dashboard';
 require_once __DIR__ . '/../auth.php';
-require_once __DIR__ . '/../header.php';
-
 requireRole('admin', '../index.php');
+require_once __DIR__ . '/../header.php';
 
 $db = getDB();
 
@@ -191,8 +190,17 @@ $classAttendance = $stmt->fetchAll();
                 <a href="attendance.php" class="btn btn-primary">
                     <i data-feather="check-square"></i> View Attendance
                 </a>
+                <a href="daily-report.php" class="btn btn-secondary">
+                    <i data-feather="calendar"></i> Daily Report
+                </a>
+                <a href="performance.php" class="btn btn-secondary">
+                    <i data-feather="trending-up"></i> Performance
+                </a>
                 <a href="reports.php" class="btn btn-primary">
                     <i data-feather="bar-chart-2"></i> Reports
+                </a>
+                <a href="logs.php" class="btn btn-secondary">
+                    <i data-feather="file-text"></i> Audit Logs
                 </a>
                 <a href="settings.php" class="btn btn-secondary">
                     <i data-feather="settings"></i> Settings

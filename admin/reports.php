@@ -1,8 +1,6 @@
 <?php
 $pageTitle = 'Reports';
 require_once __DIR__ . '/../auth.php';
-require_once __DIR__ . '/../header.php';
-
 requireRole('admin', '../index.php');
 
 $db = getDB();
@@ -11,10 +9,16 @@ $startDate = $_GET['start_date'] ?? date('Y-m-01');
 $endDate = $_GET['end_date'] ?? date('Y-m-d');
 $selectedClass = $_GET['class'] ?? '';
 
-// Handle CSV export
+// Handle CSV export (must be before any output)
 if (isset($_GET['export'])) {
     $export = $_GET['export'];
-    
+    $params = [$startDate, $endDate];
+    $classFilter = '';
+    if (!empty($selectedClass)) {
+        $classFilter = ' AND s.class = ?';
+        $params[] = $selectedClass;
+    }
+
     if ($export === 'daily') {
         $date = $_GET['export_date'] ?? date('Y-m-d');
         $stmt = $db->prepare("
@@ -77,6 +81,99 @@ if (isset($_GET['export'])) {
         exportCSV("monthly-attendance-" . $startDate . "-to-" . $endDate . ".csv",
                   ['Roll No', 'Name', 'Class', 'Total Days', 'Present', 'Absent', 'Late', 'Percentage'],
                   $data);
+    } elseif ($export === 'student') {
+        $stmt = $db->prepare("
+            SELECT 
+                s.id, s.roll_number, s.name, s.class,
+                COUNT(sa.id) as total_days,
+                SUM(CASE WHEN sa.status = 'present' THEN 1 ELSE 0 END) as present,
+                SUM(CASE WHEN sa.status = 'absent' THEN 1 ELSE 0 END) as absent,
+                SUM(CASE WHEN sa.status = 'late' THEN 1 ELSE 0 END) as late
+            FROM students s
+            LEFT JOIN student_attendance sa ON s.id = sa.student_id AND sa.date BETWEEN ? AND ?
+            WHERE s.is_active = 1" . $classFilter . "
+            GROUP BY s.id
+            ORDER BY s.class, s.roll_number
+        ");
+        $stmt->execute($params);
+        $rows = $stmt->fetchAll();
+
+        $data = [];
+        foreach ($rows as $row) {
+            $percentage = $row['total_days'] > 0 ? round(($row['present'] / $row['total_days']) * 100, 2) : 0;
+            $data[] = [
+                $row['roll_number'],
+                $row['name'],
+                $row['class'],
+                $row['total_days'],
+                $row['present'],
+                $row['absent'],
+                $row['late'],
+                $percentage . '%'
+            ];
+        }
+
+        exportCSV("student-attendance-" . $startDate . "-to-" . $endDate . ".csv",
+                  ['Roll No', 'Name', 'Class', 'Total Days', 'Present', 'Absent', 'Late', 'Percentage'],
+                  $data);
+    } elseif ($export === 'teacher') {
+        $stmt = $db->prepare("
+            SELECT u.name as teacher_name, u.email,
+                COUNT(ta.id) as total_days,
+                SUM(CASE WHEN ta.status = 'present' THEN 1 ELSE 0 END) as present,
+                SUM(CASE WHEN ta.status = 'absent' THEN 1 ELSE 0 END) as absent,
+                SUM(CASE WHEN ta.status = 'late' THEN 1 ELSE 0 END) as late
+            FROM users u
+            LEFT JOIN teacher_attendance ta ON u.id = ta.teacher_id AND ta.date BETWEEN ? AND ?
+            WHERE u.role = 'teacher' AND u.is_active = 1
+            GROUP BY u.id
+            ORDER BY u.name
+        ");
+        $stmt->execute([$startDate, $endDate]);
+        $rows = $stmt->fetchAll();
+
+        $data = [];
+        foreach ($rows as $row) {
+            $percentage = $row['total_days'] > 0 ? round(($row['present'] / $row['total_days']) * 100, 2) : 0;
+            $data[] = [
+                $row['teacher_name'],
+                $row['email'],
+                $row['total_days'],
+                $row['present'],
+                $row['absent'],
+                $row['late'],
+                $percentage . '%'
+            ];
+        }
+
+        exportCSV("teacher-attendance-" . $startDate . "-to-" . $endDate . ".csv",
+                  ['Teacher Name', 'Email', 'Total Days', 'Present', 'Absent', 'Late', 'Percentage'],
+                  $data);
+    } elseif ($export === 'absent_list') {
+        $stmt = $db->prepare("
+            SELECT s.roll_number, s.name, s.class, sa.date, s.parent_email
+            FROM student_attendance sa
+            JOIN students s ON s.id = sa.student_id
+            WHERE sa.date BETWEEN ? AND ? AND sa.status = 'absent'
+            ORDER BY sa.date DESC, s.class, s.roll_number
+        ");
+        $stmt->execute([$startDate, $endDate]);
+        $rows = $stmt->fetchAll();
+
+        $data = [];
+        foreach ($rows as $row) {
+            $data[] = [
+                $row['roll_number'],
+                $row['name'],
+                $row['class'],
+                formatDate($row['date']),
+                $row['parent_email']
+            ];
+        }
+
+        exportCSV("absent-students-list-" . $startDate . "-to-" . $endDate . ".csv",
+                  ['Roll No', 'Name', 'Class', 'Date', 'Parent Email'],
+                  $data);
     } elseif ($export === 'absentees') {
         $stmt = $db->prepare("
             SELECT DISTINCT s.roll_number, s.name, s.class, s.parent_email
@@ -103,6 +200,8 @@ if (isset($_GET['export'])) {
                   $data);
     }
 }
+
+require_once __DIR__ . '/../header.php';
 
 // Get daily attendance data
 $stmt = $db->prepare("
@@ -137,6 +236,67 @@ $stmt = $db->prepare("
 ");
 $stmt->execute([$startDate, $endDate]);
 $monthlyData = $stmt->fetchAll();
+
+// Get student attendance report data
+$studentData = [];
+if ($reportType === 'student') {
+    $query = "
+        SELECT 
+            s.id, s.roll_number, s.name, s.class,
+            COUNT(sa.id) as total_days,
+            SUM(CASE WHEN sa.status = 'present' THEN 1 ELSE 0 END) as present,
+            SUM(CASE WHEN sa.status = 'absent' THEN 1 ELSE 0 END) as absent,
+            SUM(CASE WHEN sa.status = 'late' THEN 1 ELSE 0 END) as late
+        FROM students s
+        LEFT JOIN student_attendance sa ON s.id = sa.student_id AND sa.date BETWEEN ? AND ?
+        WHERE s.is_active = 1";
+    $params = [$startDate, $endDate];
+    if (!empty($selectedClass)) {
+        $query .= ' AND s.class = ?';
+        $params[] = $selectedClass;
+    }
+    $query .= "
+        GROUP BY s.id
+        ORDER BY s.class, s.roll_number
+    ";
+
+    $stmt = $db->prepare($query);
+    $stmt->execute($params);
+    $studentData = $stmt->fetchAll();
+}
+
+// Get teacher attendance report data
+$teacherData = [];
+if ($reportType === 'teacher') {
+    $stmt = $db->prepare("
+        SELECT u.id, u.name as teacher_name, u.email,
+            COUNT(ta.id) as total_days,
+            SUM(CASE WHEN ta.status = 'present' THEN 1 ELSE 0 END) as present,
+            SUM(CASE WHEN ta.status = 'absent' THEN 1 ELSE 0 END) as absent,
+            SUM(CASE WHEN ta.status = 'late' THEN 1 ELSE 0 END) as late
+        FROM users u
+        LEFT JOIN teacher_attendance ta ON u.id = ta.teacher_id AND ta.date BETWEEN ? AND ?
+        WHERE u.role = 'teacher' AND u.is_active = 1
+        GROUP BY u.id
+        ORDER BY u.name
+    ");
+    $stmt->execute([$startDate, $endDate]);
+    $teacherData = $stmt->fetchAll();
+}
+
+// Get absent student list
+$absentList = [];
+if ($reportType === 'absent_list') {
+    $stmt = $db->prepare("
+        SELECT s.roll_number, s.name, s.class, sa.date, s.parent_email
+        FROM student_attendance sa
+        JOIN students s ON s.id = sa.student_id
+        WHERE sa.date BETWEEN ? AND ? AND sa.status = 'absent'
+        ORDER BY sa.date DESC, s.class, s.roll_number
+    ");
+    $stmt->execute([$startDate, $endDate]);
+    $absentList = $stmt->fetchAll();
+}
 
 // Get frequent absentees
 $stmt = $db->prepare("
@@ -177,7 +337,10 @@ $classes = $stmt->fetchAll();
                         <label>Report Type</label>
                         <select name="report" onchange="this.form.submit()">
                             <option value="daily" <?= $reportType === 'daily' ? 'selected' : '' ?>>Daily Report</option>
-                            <option value="monthly" <?= $reportType === 'monthly' ? 'selected' : '' ?>>Monthly Report</option>
+                            <option value="monthly" <?= $reportType === 'monthly' ? 'selected' : '' ?>>Monthly Summary</option>
+                            <option value="student" <?= $reportType === 'student' ? 'selected' : '' ?>>Student Attendance Report</option>
+                            <option value="teacher" <?= $reportType === 'teacher' ? 'selected' : '' ?>>Teacher Attendance Report</option>
+                            <option value="absent_list" <?= $reportType === 'absent_list' ? 'selected' : '' ?>>Absent Students List</option>
                             <option value="absentees" <?= $reportType === 'absentees' ? 'selected' : '' ?>>Frequent Absentees</option>
                         </select>
                     </div>
@@ -188,6 +351,17 @@ $classes = $stmt->fetchAll();
                     <div class="form-group">
                         <label>End Date</label>
                         <input type="date" name="end_date" value="<?= $endDate ?>" onchange="this.form.submit()">
+                    </div>
+                    <div class="form-group">
+                        <label>Class</label>
+                        <select name="class" onchange="this.form.submit()">
+                            <option value="">All Classes</option>
+                            <?php foreach ($classes as $cls): ?>
+                            <option value="<?= htmlspecialchars($cls['class']) ?>" <?= $selectedClass === $cls['class'] ? 'selected' : '' ?>>
+                                Class <?= htmlspecialchars($cls['class']) ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
                 </div>
             </form>
@@ -274,6 +448,139 @@ $classes = $stmt->fetchAll();
                                     <?= $percentage ?>%
                                 </span>
                             </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <?php elseif ($reportType === 'student'): ?>
+    <!-- Student Attendance Report -->
+    <div class="card mb-6">
+        <div class="card-header">
+            <h3><i data-feather="users"></i> Student Attendance Report</h3>
+            <a href="?report=student&start_date=<?= $startDate ?>&end_date=<?= $endDate ?>&class=<?= urlencode($selectedClass) ?>&export=student" class="btn btn-sm btn-secondary">
+                <i data-feather="download"></i> Export CSV
+            </a>
+        </div>
+        <div class="card-body">
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Roll No</th>
+                            <th>Name</th>
+                            <th>Class</th>
+                            <th>Total Days</th>
+                            <th>Present</th>
+                            <th>Absent</th>
+                            <th>Late</th>
+                            <th>Attendance %</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($studentData as $row):
+                            $percentage = $row['total_days'] > 0 ? round(($row['present'] / $row['total_days']) * 100, 2) : 0;
+                        ?>
+                        <tr>
+                            <td><?= htmlspecialchars($row['roll_number']) ?></td>
+                            <td><?= htmlspecialchars($row['name']) ?></td>
+                            <td><?= htmlspecialchars($row['class']) ?></td>
+                            <td><?= $row['total_days'] ?></td>
+                            <td><?= $row['present'] ?></td>
+                            <td><?= $row['absent'] ?></td>
+                            <td><?= $row['late'] ?></td>
+                            <td>
+                                <span class="badge" style="background:<?= $percentage >= 75 ? '#d1fae5' : ($percentage >= 50 ? '#fef3c7' : '#fee2e2') ?>;color:<?= $percentage >= 75 ? '#059669' : ($percentage >= 50 ? '#d97706' : '#dc2626') ?>">
+                                    <?= $percentage ?>%
+                                </span>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <?php elseif ($reportType === 'teacher'): ?>
+    <!-- Teacher Attendance Report -->
+    <div class="card mb-6">
+        <div class="card-header">
+            <h3><i data-feather="users"></i> Teacher Attendance Report</h3>
+            <a href="?report=teacher&start_date=<?= $startDate ?>&end_date=<?= $endDate ?>&export=teacher" class="btn btn-sm btn-secondary">
+                <i data-feather="download"></i> Export CSV
+            </a>
+        </div>
+        <div class="card-body">
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Teacher</th>
+                            <th>Email</th>
+                            <th>Total Days</th>
+                            <th>Present</th>
+                            <th>Absent</th>
+                            <th>Late</th>
+                            <th>Attendance %</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($teacherData as $row):
+                            $percentage = $row['total_days'] > 0 ? round(($row['present'] / $row['total_days']) * 100, 2) : 0;
+                        ?>
+                        <tr>
+                            <td><?= htmlspecialchars($row['teacher_name']) ?></td>
+                            <td><?= htmlspecialchars($row['email']) ?></td>
+                            <td><?= $row['total_days'] ?></td>
+                            <td><?= $row['present'] ?></td>
+                            <td><?= $row['absent'] ?></td>
+                            <td><?= $row['late'] ?></td>
+                            <td>
+                                <span class="badge" style="background:<?= $percentage >= 75 ? '#d1fae5' : ($percentage >= 50 ? '#fef3c7' : '#fee2e2') ?>;color:<?= $percentage >= 75 ? '#059669' : ($percentage >= 50 ? '#d97706' : '#dc2626') ?>">
+                                    <?= $percentage ?>%
+                                </span>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <?php elseif ($reportType === 'absent_list'): ?>
+    <!-- Absent Students List -->
+    <div class="card mb-6">
+        <div class="card-header">
+            <h3><i data-feather="alert-circle"></i> Absent Students List</h3>
+            <a href="?report=absent_list&start_date=<?= $startDate ?>&end_date=<?= $endDate ?>&export=absent_list" class="btn btn-sm btn-secondary">
+                <i data-feather="download"></i> Export CSV
+            </a>
+        </div>
+        <div class="card-body">
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Roll No</th>
+                            <th>Name</th>
+                            <th>Class</th>
+                            <th>Parent Email</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($absentList as $row): ?>
+                        <tr>
+                            <td><?= formatDate($row['date']) ?></td>
+                            <td><?= htmlspecialchars($row['roll_number']) ?></td>
+                            <td><?= htmlspecialchars($row['name']) ?></td>
+                            <td><?= htmlspecialchars($row['class']) ?></td>
+                            <td><?= htmlspecialchars($row['parent_email']) ?></td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>

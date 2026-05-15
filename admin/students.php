@@ -1,9 +1,8 @@
 <?php
 $pageTitle = 'Manage Students';
 require_once __DIR__ . '/../auth.php';
-require_once __DIR__ . '/../header.php';
-
 requireRole('admin', '../index.php');
+require_once __DIR__ . '/../header.php';
 
 $db = getDB();
 $error = $success = '';

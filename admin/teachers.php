@@ -80,25 +80,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     } elseif ($action === 'delete') {
         $id = (int)($_POST['id'] ?? 0);
-        $name = trim($_POST['name'] ?? '');
-        $phone = trim($_POST['phone'] ?? '');
-        $subject = trim($_POST['subject'] ?? '');
-        $isActive = (int)($_POST['is_active'] ?? 1);
-        
-        if (empty($name) || $id <= 0) {
-            $error = 'Invalid data.';
-        } else {
-            try {
-                $stmt = $db->prepare("UPDATE users SET name=?, phone=?, subject=?, is_active=? WHERE id=?");
-                $stmt->execute([$name, $phone, $subject, $isActive, $id]);
-                $success = 'Teacher updated successfully!';
-                auditLog($_SESSION['user_id'], 'UPDATE', 'teachers', "Updated teacher ID: $id");
-            } catch (Exception $e) {
-                $error = 'Error: ' . $e->getMessage();
-            }
-        }
-    } elseif ($action === 'delete') {
-        $id = (int)($_POST['id'] ?? 0);
         if ($id > 0) {
             try {
                 $stmt = $db->prepare("UPDATE users SET is_active = 0 WHERE id = ? AND role = 'teacher'");

@@ -1,15 +1,13 @@
 <?php
 $pageTitle = 'Attendance Reports';
 require_once __DIR__ . '/../auth.php';
-require_once __DIR__ . '/../header.php';
-
 requireRole('principal', '../index.php');
 
 $db = getDB();
 $startDate = $_GET['start_date'] ?? date('Y-m-01');
 $endDate = $_GET['end_date'] ?? date('Y-m-d');
 
-// Handle CSV export
+// Handle CSV export (must be before any output)
 if (isset($_GET['export'])) {
     $stmt = $db->prepare("
         SELECT 
@@ -46,6 +44,8 @@ if (isset($_GET['export'])) {
               ['Roll No', 'Name', 'Class', 'Total Days', 'Present', 'Absent', 'Late', 'Percentage'],
               $data);
 }
+
+require_once __DIR__ . '/../header.php';
 
 // Get monthly data
 $stmt = $db->prepare("

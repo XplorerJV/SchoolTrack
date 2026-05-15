@@ -1,9 +1,8 @@
 <?php
 $pageTitle = 'Settings';
 require_once __DIR__ . '/../auth.php';
-require_once __DIR__ . '/../header.php';
-
 requireRole('admin', '../index.php');
+require_once __DIR__ . '/../header.php';
 
 $db = getDB();
 $error = $success = '';
@@ -11,21 +10,26 @@ $error = $success = '';
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $settings = [
-        'school_name' => $_POST['school_name'] ?? '',
-        'school_address' => $_POST['school_address'] ?? '',
-        'google_maps_location' => $_POST['google_maps_location'] ?? '',
-        'cutoff_time' => $_POST['cutoff_time'] ?? '09:30:00',
-        'late_time' => $_POST['late_time'] ?? '08:15:00',
-        'school_start_time' => $_POST['school_start_time'] ?? '07:30:00',
-        'academic_year' => $_POST['academic_year'] ?? '',
-        'smtp_host' => $_POST['smtp_host'] ?? '',
-        'smtp_port' => $_POST['smtp_port'] ?? '587',
-        'smtp_username' => $_POST['smtp_username'] ?? '',
-        'smtp_password' => $_POST['smtp_password'] ?? '',
-        'smtp_from_name' => $_POST['smtp_from_name'] ?? 'School Attendance',
-        'smtp_encryption' => $_POST['smtp_encryption'] ?? 'tls',
-        'email_notifications' => $_POST['email_notifications'] ?? '0'
+        'school_name'        => $_POST['school_name'] ?? '',
+        'school_address'     => $_POST['school_address'] ?? '',
+        'cutoff_time'        => $_POST['cutoff_time'] ?? '09:30:00',
+        'late_time'          => $_POST['late_time'] ?? '08:15:00',
+        'school_start_time'  => $_POST['school_start_time'] ?? '07:30:00',
+        'academic_year'      => $_POST['academic_year'] ?? '',
+        'smtp_host'          => $_POST['smtp_host'] ?? '',
+        'smtp_port'          => $_POST['smtp_port'] ?? '587',
+        'smtp_username'      => $_POST['smtp_username'] ?? '',
+        'smtp_from_name'     => $_POST['smtp_from_name'] ?? 'School Attendance',
+        'smtp_encryption'    => $_POST['smtp_encryption'] ?? 'tls',
+        'email_api_url'      => $_POST['email_api_url'] ?? '',
+        'email_api_key'      => $_POST['email_api_key'] ?? '',
+        'email_api_header'   => $_POST['email_api_header'] ?? 'Authorization',
+        'email_notifications'=> $_POST['email_notifications'] ?? '0',
     ];
+    // Only update password if a new one was entered
+    if (!empty($_POST['smtp_password'])) {
+        $settings['smtp_password'] = $_POST['smtp_password'];
+    }
     
     try {
         foreach ($settings as $key => $value) {
@@ -49,9 +53,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Get current settings
-$settingKeys = ['school_name', 'school_address', 'google_maps_location', 'cutoff_time', 'late_time', 'school_start_time', 'academic_year', 
+$settingKeys = ['school_name', 'school_address', 'cutoff_time', 'late_time', 'school_start_time', 'academic_year', 
                 'smtp_host', 'smtp_port', 'smtp_username', 'smtp_password', 'smtp_from_name', 
-                'smtp_encryption', 'email_notifications'];
+                'smtp_encryption', 'email_api_url', 'email_api_key', 'email_api_header', 'email_notifications'];
 
 $currentSettings = [];
 foreach ($settingKeys as $key) {
@@ -101,11 +105,6 @@ foreach ($settingKeys as $key) {
                         <label>School Address</label>
                         <textarea name="school_address" class="form-input" rows="3"><?= htmlspecialchars($currentSettings['school_address'] ?? '') ?></textarea>
                     </div>
-                    <div class="form-group">
-                        <label>Google Maps Embed URL</label>
-                        <input type="text" name="google_maps_location" value="<?= htmlspecialchars($currentSettings['google_maps_location'] ?? '') ?>" class="form-input" placeholder="https://www.google.com/maps/embed?...">
-                        <small>Paste the Google Maps embed URL or map link.</small>
-                    </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -119,18 +118,7 @@ foreach ($settingKeys as $key) {
                         <?php endif; ?>
                     </div>
                 </div>
-                <?php if (!empty($currentSettings['google_maps_location'])): ?>
-                <div class="form-row">
-                    <div class="form-group" style="width:100%">
-                        <label>Map Preview</label>
-                        <?php if (strpos($currentSettings['google_maps_location'], 'embed') !== false): ?>
-                        <iframe src="<?= htmlspecialchars($currentSettings['google_maps_location']) ?>" style="width:100%;height:260px;border:0;border-radius:12px;"></iframe>
-                        <?php else: ?>
-                        <a href="<?= htmlspecialchars($currentSettings['google_maps_location']) ?>" target="_blank" class="btn btn-secondary">Open map in Google Maps</a>
-                        <?php endif; ?>
-                    </div>
-                </div>
-                <?php endif; ?>
+
             </div>
         </div>
 
@@ -212,14 +200,35 @@ foreach ($settingKeys as $key) {
                     </div>
                 </div>
 
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>External Email API URL</label>
+                        <input type="text" name="email_api_url" value="<?= htmlspecialchars($currentSettings['email_api_url'] ?? '') ?>" placeholder="https://api.example.com/send_email">
+                    </div>
+                    <div class="form-group">
+                        <label>External Email API Key</label>
+                        <input type="text" name="email_api_key" value="<?= htmlspecialchars($currentSettings['email_api_key'] ?? '') ?>" placeholder="MY_SECRET_KEY_123">
+                    </div>
+                    <div class="form-group">
+                        <label>API Authorization Header</label>
+                        <input type="text" name="email_api_header" value="<?= htmlspecialchars($currentSettings['email_api_header'] ?? 'Authorization') ?>" placeholder="Authorization">
+                    </div>
+                </div>
+
                 <div style="background:#f3f4f6;padding:15px;border-radius:8px;margin-top:15px">
                     <p style="margin:0;font-size:13px;color:#6b7280">
-                        <strong>Example for Gmail:</strong><br>
+                        <strong>Example for Gmail SMTP:</strong><br>
                         Host: smtp.gmail.com<br>
                         Port: 587<br>
                         Encryption: TLS<br>
                         Username: your-email@gmail.com<br>
                         Password: app-specific-password
+                    </p>
+                    <p style="margin:10px 0 0;font-size:13px;color:#6b7280">
+                        <strong>Example for external API:</strong><br>
+                        URL: https://email.indiegrampublications.com/send_email.php<br>
+                        Header: Authorization<br>
+                        Key: MY_SECRET_KEY_123
                     </p>
                 </div>
             </div>

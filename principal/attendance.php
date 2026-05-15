@@ -1,9 +1,8 @@
 <?php
 $pageTitle = 'View Attendance';
 require_once __DIR__ . '/../auth.php';
-require_once __DIR__ . '/../header.php';
-
 requireRole('principal', '../index.php');
+require_once __DIR__ . '/../header.php';
 
 $db = getDB();
 $filterDate = $_GET['date'] ?? date('Y-m-d');

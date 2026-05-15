@@ -112,39 +112,7 @@ body{font-family:'Inter',sans-serif;min-height:100vh;display:flex;background:#0f
         </div>
     </div>
 
-    <div class="map-card">
-        <div class="map-card-header">
-            <div class="map-card-title">School Location</div>
-            <div class="map-card-sub">Quick access to the school address on Google Maps.</div>
-        </div>
-        <div class="map-frame">
-            <?php
-                $schoolAddr = getSetting('school_address') ?: '123 Main Street, Your City';
-                $mapQ = urlencode($schoolAddr);
-            ?>
-            <iframe src="https://www.google.com/maps?q=<?= $mapQ ?>&output=embed" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
-        </div>
-        <div style="margin-top:8px;color:rgba(255,255,255,.8);font-size:13px;">
-            <?php
-                $principal = getSetting('principal_name');
-                if (empty($principal)) {
-                    try {
-                        $db = getDB();
-                        $pstmt = $db->prepare("SELECT name, email, phone FROM users WHERE role = 'principal' LIMIT 1");
-                        $pstmt->execute();
-                        $pinfo = $pstmt->fetch();
-                        if ($pinfo) $principal = $pinfo['name'];
-                    } catch (Exception $e) { $principal = 'Principal'; }
-                }
-                $schoolPhone = getSetting('school_phone') ?: ($pinfo['phone'] ?? '');
-            ?>
-            <div style="font-weight:700;color:#fff;">Lead: <?= htmlspecialchars($principal) ?></div>
-            <?php if ($schoolPhone): ?>
-            <div style="font-size:12px;color:rgba(255,255,255,.6);">Contact: <?= htmlspecialchars($schoolPhone) ?></div>
-            <?php endif; ?>
-            <div style="font-size:12px;color:rgba(255,255,255,.6);">Address: <?= htmlspecialchars($schoolAddr) ?></div>
-        </div>
-    </div>
+
 
     <div class="right-panel">
         <div class="login-box">

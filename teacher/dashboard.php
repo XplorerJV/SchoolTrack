@@ -1,9 +1,8 @@
 <?php
 $pageTitle = 'Teacher Dashboard';
 require_once __DIR__ . '/../auth.php';
-require_once __DIR__ . '/../header.php';
-
 requireRole('teacher', '../index.php');
+require_once __DIR__ . '/../header.php';
 
 $db = getDB();
 $user = getCurrentUser();
@@ -121,6 +120,45 @@ $attendance_percentage = $stats['total'] > 0 ? round(($stats['present'] / $stats
             <div class="stat-content">
                 <p class="stat-label">Attendance %</p>
                 <p class="stat-value"><?= $attendance_percentage ?>%</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="card" style="cursor:pointer;transition:all .2s" onclick="window.location.href='my-attendance.php'">
+            <div class="card-body" style="display:flex;align-items:center;gap:16px">
+                <div style="width:60px;height:60px;background:rgba(59,130,246,.1);border-radius:12px;display:flex;align-items:center;justify-content:center">
+                    <i data-feather="check-circle" style="color:#3b82f6;width:28px;height:28px"></i>
+                </div>
+                <div>
+                    <h4 style="margin:0;font-size:14px;color:#6b7280">Mark My Attendance</h4>
+                    <p style="margin:4px 0 0;font-size:12px;color:#9ca3af">Record your daily attendance</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="cursor:pointer;transition:all .2s" onclick="window.location.href='mark-attendance.php'">
+            <div class="card-body" style="display:flex;align-items:center;gap:16px">
+                <div style="width:60px;height:60px;background:rgba(34,197,94,.1);border-radius:12px;display:flex;align-items:center;justify-content:center">
+                    <i data-feather="edit-2" style="color:#22c55e;width:28px;height:28px"></i>
+                </div>
+                <div>
+                    <h4 style="margin:0;font-size:14px;color:#6b7280">Mark Student Attendance</h4>
+                    <p style="margin:4px 0 0;font-size:12px;color:#9ca3af">Record student attendance manually</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="cursor:pointer;transition:all .2s" onclick="window.location.href='students.php'">
+            <div class="card-body" style="display:flex;align-items:center;gap:16px">
+                <div style="width:60px;height:60px;background:rgba(245,158,11,.1);border-radius:12px;display:flex;align-items:center;justify-content:center">
+                    <i data-feather="users" style="color:#f59e0b;width:28px;height:28px"></i>
+                </div>
+                <div>
+                    <h4 style="margin:0;font-size:14px;color:#6b7280">View Students</h4>
+                    <p style="margin:4px 0 0;font-size:12px;color:#9ca3af">Check assigned students</p>
+                </div>
             </div>
         </div>
     </div>

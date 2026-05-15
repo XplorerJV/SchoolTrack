@@ -1,9 +1,8 @@
 <?php
 $pageTitle = 'Manage Attendance';
 require_once __DIR__ . '/../auth.php';
-require_once __DIR__ . '/../header.php';
-
 requireRole('admin', '../index.php');
+require_once __DIR__ . '/../header.php';
 
 $db = getDB();
 $error = $success = '';
@@ -219,7 +218,7 @@ foreach ($stats as $stat) {
 </div>
 
 <!-- Edit Attendance Modal -->
-<div id="editModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center">
+<div id="editModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center">
     <div style="background:white;border-radius:12px;padding:30px;max-width:500px;width:90%">
         <h3>Edit Attendance</h3>
         <form method="POST" style="margin-top:20px">

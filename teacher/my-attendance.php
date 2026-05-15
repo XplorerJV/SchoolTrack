@@ -1,9 +1,8 @@
 <?php
 $pageTitle = 'My Attendance';
 require_once __DIR__ . '/../auth.php';
-require_once __DIR__ . '/../header.php';
-
 requireRole('teacher', '../index.php');
+require_once __DIR__ . '/../header.php';
 
 $db = getDB();
 $user = getCurrentUser();

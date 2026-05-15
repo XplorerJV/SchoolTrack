@@ -11,6 +11,8 @@ if ($role === 'admin') {
         ['url'=>'dashboard.php','icon'=>'grid','label'=>'Dashboard'],
         ['url'=>'students.php','icon'=>'users','label'=>'Students'],
         ['url'=>'teachers.php','icon'=>'briefcase','label'=>'Teachers'],        ['url'=>'principals.php','icon'=>'user-check','label'=>'Principals'],        ['url'=>'attendance.php','icon'=>'check-square','label'=>'Attendance'],
+        ['url'=>'daily-report.php','icon'=>'calendar','label'=>'Daily Report'],
+        ['url'=>'performance.php','icon'=>'trending-up','label'=>'Performance'],
         ['url'=>'reports.php','icon'=>'bar-chart-2','label'=>'Reports'],
         ['url'=>'logs.php','icon'=>'file-text','label'=>'Logs'],
         ['url'=>'settings.php','icon'=>'settings','label'=>'Settings'],
@@ -25,6 +27,7 @@ if ($role === 'admin') {
     $navItems = [
         ['url'=>'dashboard.php','icon'=>'grid','label'=>'Dashboard'],
         ['url'=>'my-attendance.php','icon'=>'check-square','label'=>'My Attendance'],
+        ['url'=>'mark-attendance.php','icon'=>'edit-2','label'=>'Mark Attendance'],
         ['url'=>'students.php','icon'=>'users','label'=>'Students'],
     ];
 }
