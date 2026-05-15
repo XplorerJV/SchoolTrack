@@ -17,7 +17,7 @@ $classes = $stmt->fetchAll();
 
 // Get attendance records
 $query = "
-    SELECT sa.*, s.name, s.roll_number, s.class, s.section, s.photo
+    SELECT sa.*, s.name, s.roll_number, s.class, s.section
     FROM student_attendance sa
     JOIN students s ON s.id = sa.student_id
     WHERE sa.date = ?
