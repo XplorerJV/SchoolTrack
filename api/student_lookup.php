@@ -2,6 +2,8 @@
 header('Content-Type: application/json');
 require_once __DIR__ . '/../config.php';
 
+if (session_status() === PHP_SESSION_NONE) session_start();
+
 $cardUid = trim($_GET['card_uid'] ?? '');
 $date    = trim($_GET['date'] ?? date('Y-m-d'));
 

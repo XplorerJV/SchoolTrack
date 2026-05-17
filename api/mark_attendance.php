@@ -1,7 +1,8 @@
 <?php
 header('Content-Type: application/json');
 require_once __DIR__ . '/../config.php';
-require_once __DIR__ . '/../auth.php';
+
+if (session_status() === PHP_SESSION_NONE) session_start();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['success' => false, 'message' => 'POST required']);

@@ -317,7 +317,7 @@ document.addEventListener('DOMContentLoaded', function(){
         if(!uid){ resultDiv.innerHTML=''; markBtn.disabled=true; return; }
         showMsg('Looking up...', false);
         const date = dateInput.value || '<?= date('Y-m-d') ?>';
-        fetch('api/student_lookup.php?card_uid='+encodeURIComponent(uid)+'&date='+encodeURIComponent(date))
+        fetch('../api/student_lookup.php?card_uid='+encodeURIComponent(uid)+'&date='+encodeURIComponent(date))
             .then(r=>r.json()).then(data=>{
                 if(!data.success){ markBtn.disabled=true; return showMsg(data.message, true); }
                 const s=data.student, att=data.attendance;
@@ -336,7 +336,7 @@ document.addEventListener('DOMContentLoaded', function(){
         const uid = cardInput.value.trim();
         if(!uid) return showMsg('Enter card UID first',true);
         const date = dateInput.value || '<?= date('Y-m-d') ?>';
-        fetch('api/student_lookup.php?card_uid='+encodeURIComponent(uid)+'&date='+encodeURIComponent(date))
+        fetch('../api/student_lookup.php?card_uid='+encodeURIComponent(uid)+'&date='+encodeURIComponent(date))
             .then(r=>r.json()).then(data=>{
                 if(!data.success) return showMsg(data.message,true);
                 const s=data.student;
@@ -345,7 +345,7 @@ document.addEventListener('DOMContentLoaded', function(){
                 fd.append('date',date);
                 fd.append('time_in',new Date().toLocaleTimeString('en-GB',{hour12:false,hour:'2-digit',minute:'2-digit'}));
                 fd.append('status',statusSel.value);
-                fetch('api/mark_attendance.php',{method:'POST',body:fd})
+                fetch('../api/mark_attendance.php',{method:'POST',body:fd})
                     .then(r=>r.json()).then(res=>{
                         if(res.success){
                             showMsg('✓ '+esc(s.name)+' marked as <strong>'+esc(res.status)+'</strong>',false);
