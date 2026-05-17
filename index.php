@@ -43,9 +43,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 body{font-family:'Inter',sans-serif;min-height:100vh;display:flex;background:#0f172a;overflow:hidden;}
 .bg-grid{
     position:fixed;inset:0;
-    background-image:linear-gradient(rgba(30,64,175,.3) 1px,transparent 1px),linear-gradient(90deg,rgba(30,64,175,.3) 1px,transparent 1px);
+    background-image:linear-gradient(rgba(56,189,248,.15) 1px,transparent 1px),linear-gradient(90deg,rgba(56,189,248,.15) 1px,transparent 1px);
     background-size:60px 60px;
-    opacity:.4;
+    opacity:1;
+}
+.bg-grid::after{
+    content:'';
+    position:fixed;inset:0;
+    background:radial-gradient(ellipse 80% 80% at 50% 50%, rgba(56,189,248,0.07) 0%, transparent 70%);
+    pointer-events:none;
+}
+@keyframes flowX {
+    0%   { background-position: 0 0, 0 0; }
+    100% { background-position: 60px 0, 60px 0; }
+}
+@keyframes flowY {
+    0%   { background-position: 0 0; }
+    100% { background-position: 0 60px; }
+}
+.bg-grid-h{
+    position:fixed;inset:0;pointer-events:none;
+    background-image:linear-gradient(rgba(56,189,248,0) 0px, rgba(56,189,248,0.18) 1px, rgba(56,189,248,0) 2px);
+    background-size:60px 60px;
+    animation:flowY 3s linear infinite;
+    opacity:.6;
+}
+.bg-grid-v{
+    position:fixed;inset:0;pointer-events:none;
+    background-image:linear-gradient(90deg, rgba(56,189,248,0) 0px, rgba(56,189,248,0.18) 1px, rgba(56,189,248,0) 2px);
+    background-size:60px 60px;
+    animation:flowX 3s linear infinite;
+    opacity:.6;
 }
 .bg-glow{position:fixed;top:-200px;right:-200px;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(6,182,212,.15),transparent 70%);}
 .bg-glow2{position:fixed;bottom:-200px;left:-200px;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(30,64,175,.2),transparent 70%);}
@@ -97,6 +125,8 @@ body{font-family:'Inter',sans-serif;min-height:100vh;display:flex;background:#0f
 </head>
 <body>
 <div class="bg-grid"></div>
+<div class="bg-grid-h"></div>
+<div class="bg-grid-v"></div>
 <div class="bg-glow"></div>
 <div class="bg-glow2"></div>
 
