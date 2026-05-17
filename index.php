@@ -8,7 +8,7 @@ if (isLoggedIn()) {
 
 $schoolName    = getSetting('school_name') ?: 'Springfield Public School';
 $schoolAddress = getSetting('school_address') ?: '';
-// Show only first line of address (short)
+$schoolLogo    = getSetting('school_logo') ?: '';
 $shortAddress  = explode(',', $schoolAddress)[0] ?? '';
 
 $error = '';
@@ -133,7 +133,11 @@ body{font-family:'Inter',sans-serif;min-height:100vh;display:flex;background:#0f
 <div class="login-wrapper">
     <div class="left-panel">
         <div class="brand">
-            <div class="brand-icon"><svg width="24" height="24" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg></div>
+            <?php if ($schoolLogo): ?>
+                <img src="<?= htmlspecialchars($schoolLogo) ?>" alt="School Logo" style="width:48px;height:48px;border-radius:12px;object-fit:cover;border:1px solid rgba(255,255,255,.15);flex-shrink:0;">
+            <?php else: ?>
+                <div class="brand-icon"><svg width="24" height="24" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg></div>
+            <?php endif; ?>
             <div>
                 <div class="brand-name"><?= htmlspecialchars($schoolName) ?></div>
                 <?php if ($shortAddress): ?>
