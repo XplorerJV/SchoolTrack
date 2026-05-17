@@ -6,6 +6,11 @@ if (isLoggedIn()) {
     exit;
 }
 
+$schoolName    = getSetting('school_name') ?: 'Springfield Public School';
+$schoolAddress = getSetting('school_address') ?: '';
+// Show only first line of address (short)
+$shortAddress  = explode(',', $schoolAddress)[0] ?? '';
+
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email    = trim($_POST['email'] ?? '');
@@ -28,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SchoolTrack — Attendance Management</title>
+<title><?= htmlspecialchars($schoolName) ?> — Attendance Management</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
@@ -48,8 +53,7 @@ body{font-family:'Inter',sans-serif;min-height:100vh;display:flex;background:#0f
 .left-panel{flex:1;display:flex;flex-direction:column;justify-content:center;padding:60px;color:#fff;}
 .brand{display:flex;align-items:center;gap:12px;margin-bottom:60px;}
 .brand-icon{width:48px;height:48px;background:linear-gradient(135deg,#1e40af,#06b6d4);border-radius:12px;display:flex;align-items:center;justify-content:center;}
-.brand-name{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:#fff;}
-.brand-name span{color:#06b6d4;}
+.brand-name{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#fff;line-height:1.2;}
 .hero-title{font-family:'Space Grotesk',sans-serif;font-size:48px;font-weight:700;line-height:1.15;margin-bottom:20px;}
 .hero-title span{color:#06b6d4;}
 .hero-sub{font-size:16px;color:rgba(255,255,255,.6);line-height:1.7;max-width:400px;}
@@ -100,7 +104,12 @@ body{font-family:'Inter',sans-serif;min-height:100vh;display:flex;background:#0f
     <div class="left-panel">
         <div class="brand">
             <div class="brand-icon"><svg width="24" height="24" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg></div>
-            <div class="brand-name">School<span>Track</span></div>
+            <div>
+                <div class="brand-name"><?= htmlspecialchars($schoolName) ?></div>
+                <?php if ($shortAddress): ?>
+                <div style="font-size:12px;color:rgba(255,255,255,.45);margin-top:3px;"><?= htmlspecialchars($shortAddress) ?></div>
+                <?php endif; ?>
+            </div>
         </div>
         <h1 class="hero-title">Smart <span>Attendance</span><br>Management</h1>
         <p class="hero-sub">RFID card-based attendance tracking for students, manual attendance for teachers, and comprehensive reporting for administrators.</p>
