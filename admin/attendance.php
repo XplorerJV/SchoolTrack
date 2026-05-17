@@ -90,6 +90,45 @@ foreach ($stats as $stat) {
     <div class="alert alert-success"><i data-feather="check-circle"></i> <?= htmlspecialchars($success) ?></div>
     <?php endif; ?>
 
+    <!-- Card Scan Section -->
+    <div class="card mb-6">
+        <div class="card-header">
+            <h3><i data-feather="cpu"></i> Mark Attendance via Card UID</h3>
+        </div>
+        <div class="card-body">
+            <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+                <div class="form-group" style="min-width:200px">
+                    <label>Card UID</label>
+                    <input id="cardUidInput" type="text" placeholder="Scan or type card UID" autofocus>
+                </div>
+                <div class="form-group">
+                    <label>Date</label>
+                    <input id="cardDate" type="date" value="<?= $filterDate ?>">
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="cardStatus">
+                        <option value="present">Present</option>
+                        <option value="late">Late</option>
+                        <option value="absent">Absent</option>
+                        <option value="excused">Excused</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>&nbsp;</label>
+                    <button id="markCardBtn" type="button" class="btn btn-primary" disabled>
+                        <i data-feather="check"></i> Mark Attendance
+                    </button>
+                </div>
+            </div>
+            <div id="cardResult" style="margin-top:10px"></div>
+            <div style="margin-top:12px;border-top:1px dashed #e5e7eb;padding-top:12px">
+                <p style="margin:0 0 6px;font-size:13px;font-weight:600;color:#374151">Recent Scans</p>
+                <ul id="scanList" style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px"></ul>
+            </div>
+        </div>
+    </div>
+
     <!-- Filters -->
     <div class="card mb-6">
         <div class="card-body">
@@ -254,6 +293,99 @@ function editAttendance(id, status, notes) {
 function closeModal() {
     document.getElementById('editModal').style.display = 'none';
 }
+
+// Card scan logic
+document.addEventListener('DOMContentLoaded', function(){
+    const cardInput  = document.getElementById('cardUidInput');
+    const resultDiv  = document.getElementById('cardResult');
+    const markBtn    = document.getElementById('markCardBtn');
+    const dateInput  = document.getElementById('cardDate');
+    const statusSel  = document.getElementById('cardStatus');
+    const HISTORY_KEY = 'admin_scan_history_v1';
+
+    function showMsg(html, err){
+        resultDiv.innerHTML = '<div style="padding:10px;border-radius:6px;color:'+(err?'#b91c1c':'#075985')+';background:'+(err?'#fee2e2':'#eff6ff')+';">'+html+'</div>';
+    }
+    function esc(s){ return String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';'); }
+
+    let timer;
+    cardInput.addEventListener('input', function(){ clearTimeout(timer); timer = setTimeout(lookup, 300); });
+    cardInput.addEventListener('keydown', function(e){ if(e.key==='Enter'){e.preventDefault();lookup();} });
+
+    function lookup(){
+        const uid = cardInput.value.trim();
+        if(!uid){ resultDiv.innerHTML=''; markBtn.disabled=true; return; }
+        showMsg('Looking up...', false);
+        const date = dateInput.value || '<?= date('Y-m-d') ?>';
+        fetch('api/student_lookup.php?card_uid='+encodeURIComponent(uid)+'&date='+encodeURIComponent(date))
+            .then(r=>r.json()).then(data=>{
+                if(!data.success){ markBtn.disabled=true; return showMsg(data.message, true); }
+                const s=data.student, att=data.attendance;
+                if(att){
+                    showMsg('<strong>'+esc(s.name)+'</strong> already marked as <strong>'+esc(att.status)+'</strong> at '+(att.time_in||'N/A'));
+                    markBtn.disabled=true;
+                    addHistory({name:s.name,roll:s.roll_number,cls:s.class,date:date,time:att.time_in||'-',status:att.status});
+                } else {
+                    showMsg('<strong>'+esc(s.name)+'</strong> — Roll: '+esc(s.roll_number)+' — Class: '+esc(s.class)+(s.section?' / '+esc(s.section):''));
+                    markBtn.disabled=false;
+                }
+            }).catch(()=>{ markBtn.disabled=true; showMsg('Lookup failed',true); });
+    }
+
+    markBtn.addEventListener('click', function(){
+        const uid = cardInput.value.trim();
+        if(!uid) return showMsg('Enter card UID first',true);
+        const date = dateInput.value || '<?= date('Y-m-d') ?>';
+        fetch('api/student_lookup.php?card_uid='+encodeURIComponent(uid)+'&date='+encodeURIComponent(date))
+            .then(r=>r.json()).then(data=>{
+                if(!data.success) return showMsg(data.message,true);
+                const s=data.student;
+                const fd=new FormData();
+                fd.append('student_id',s.id);
+                fd.append('date',date);
+                fd.append('time_in',new Date().toLocaleTimeString('en-GB',{hour12:false,hour:'2-digit',minute:'2-digit'}));
+                fd.append('status',statusSel.value);
+                fetch('api/mark_attendance.php',{method:'POST',body:fd})
+                    .then(r=>r.json()).then(res=>{
+                        if(res.success){
+                            showMsg('✓ '+esc(s.name)+' marked as <strong>'+esc(res.status)+'</strong>',false);
+                            markBtn.disabled=true;
+                            playBeep();
+                            const t=new Date().toLocaleTimeString('en-GB',{hour12:false,hour:'2-digit',minute:'2-digit'});
+                            addHistory({name:s.name,roll:s.roll_number,cls:s.class,date:date,time:t,status:statusSel.value});
+                            setTimeout(()=>location.reload(),1200);
+                        } else showMsg(res.message||'Error',true);
+                    }).catch(()=>showMsg('Save failed',true));
+            }).catch(()=>showMsg('Lookup failed',true));
+    });
+
+    function addHistory(e){
+        let arr=[]; try{arr=JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]');}catch(x){}
+        arr.unshift(e); if(arr.length>5)arr.pop();
+        localStorage.setItem(HISTORY_KEY,JSON.stringify(arr)); renderHistory();
+    }
+    function renderHistory(){
+        const list=document.getElementById('scanList'); list.innerHTML='';
+        let arr=[]; try{arr=JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]');}catch(x){}
+        if(!arr.length){list.innerHTML='<li style="color:#6b7280;font-size:13px">No recent scans</li>';return;}
+        arr.forEach(it=>{
+            const li=document.createElement('li');
+            li.style.cssText='padding:8px;border-radius:6px;background:#f8fafc;display:flex;justify-content:space-between;align-items:center;font-size:13px';
+            li.innerHTML='<div><strong>'+esc(it.name)+'</strong> <span style="color:#6b7280">('+esc(it.roll)+')</span><div style="font-size:12px;color:#6b7280">Class '+esc(it.cls)+' — '+esc(it.date)+' '+esc(it.time)+'</div></div><span style="font-weight:600;color:#065f46">'+esc(it.status)+'</span>';
+            list.appendChild(li);
+        });
+    }
+    function playBeep(){
+        try{
+            const ctx=new(window.AudioContext||window.webkitAudioContext)();
+            const o=ctx.createOscillator(),g=ctx.createGain();
+            o.type='sine';o.frequency.value=1100;g.gain.value=0.02;
+            o.connect(g);g.connect(ctx.destination);o.start();
+            setTimeout(()=>{o.stop();ctx.close();},120);
+        }catch(e){}
+    }
+    renderHistory();
+});
 </script>
 
 <?php require_once __DIR__ . '/../footer.php'; ?>
