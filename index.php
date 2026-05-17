@@ -9,7 +9,6 @@ if (isLoggedIn()) {
 $schoolName    = getSetting('school_name') ?: 'Springfield Public School';
 $schoolAddress = getSetting('school_address') ?: '';
 $schoolLogo    = getSetting('school_logo') ?: '';
-$shortAddress  = explode(',', $schoolAddress)[0] ?? '';
 
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -140,8 +139,8 @@ body{font-family:'Inter',sans-serif;min-height:100vh;display:flex;background:#0f
             <?php endif; ?>
             <div>
                 <div class="brand-name"><?= htmlspecialchars($schoolName) ?></div>
-                <?php if ($shortAddress): ?>
-                <div style="font-size:12px;color:rgba(255,255,255,.45);margin-top:3px;"><?= htmlspecialchars($shortAddress) ?></div>
+                <?php if ($schoolAddress): ?>
+                <div style="font-size:12px;color:rgba(255,255,255,.45);margin-top:3px;line-height:1.4;"><?= nl2br(htmlspecialchars($schoolAddress)) ?></div>
                 <?php endif; ?>
             </div>
         </div>
