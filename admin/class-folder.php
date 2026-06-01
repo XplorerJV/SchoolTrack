@@ -46,9 +46,8 @@ if (isset($_GET['view'])) {
         <h1><i data-feather="folder"></i> Class <?= htmlspecialchars($selectedClass) ?></h1>
         <p><?= count($students) ?> students</p>
     </div>
-    <div style="display:flex;gap:8px">
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
         <a href="class-folders.php" class="btn btn-secondary"><i data-feather="arrow-left"></i> Back</a>
-        <a href="../teacher/mark-attendance.php?class=<?= urlencode($selectedClass) ?>" class="btn btn-primary"><i data-feather="check-square"></i> Mark Attendance</a>
         <a href="class-performance.php?class=<?= urlencode($selectedClass) ?>" class="btn btn-secondary"><i data-feather="bar-chart-2"></i> Performance</a>
     </div>
 </div>
@@ -91,7 +90,7 @@ if (isset($_GET['view'])) {
                                 <a href="?class=<?= urlencode($selectedClass) ?>&view=<?= $s['id'] ?>" class="btn btn-sm btn-primary">
                                     <i data-feather="user"></i> Profile
                                 </a>
-                                <a href="../teacher/mark-attendance.php?class=<?= urlencode($selectedClass) ?>" class="btn btn-sm btn-secondary">
+                                <a href="../teacher/mark-attendance.php?class=<?= urlencode($selectedClass) ?>&period=1" class="btn btn-sm btn-secondary">
                                     <i data-feather="check-square"></i> Mark
                                 </a>
                             </div>
@@ -102,6 +101,62 @@ if (isset($_GET['view'])) {
                 </table>
             </div>
             <?php endif; ?>
+        </div>
+    </div>
+</div>
+
+<?php
+// Period selection bar for this class
+require_once __DIR__ . '/../periods.php';
+$periodTimes = PERIOD_TIMES;
+$today = date('Y-m-d');
+$pStats = [];
+for ($p=1;$p<=9;$p++) {
+    $st = $db->prepare("SELECT COUNT(*) FROM student_attendance sa JOIN students s ON sa.student_id=s.id WHERE s.class=? AND sa.date=? AND sa.period=?");
+    $st->execute([$selectedClass,$today,$p]);
+    $pStats[$p] = (int)$st->fetchColumn();
+}
+$totalStudents = count($students);
+?>
+
+<!-- Period Selection Bar -->
+<div class="card mb-6">
+    <div class="card-header">
+        <h3><i data-feather="clock"></i> Mark Attendance by Period — Today (<?= date('d M Y') ?>)</h3>
+    </div>
+    <div class="card-body" style="padding:16px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <?php foreach($periodTimes as $p=>$pt):
+                $marked  = $pStats[$p];
+                $done    = $totalStudents > 0 && $marked >= $totalStudents;
+                $partial = $marked > 0 && !$done;
+            ?>
+            <?php if ($p === 4): ?>
+            <div style="padding:8px 10px;background:#fef3c7;border-radius:8px;font-size:11px;color:#92400e;font-weight:600;text-align:center;line-height:1.4">
+                ☕ Break<br>11:00–11:30
+            </div>
+            <?php endif; ?>
+            <?php if ($p === 7): ?>
+            <div style="padding:8px 10px;background:#fef3c7;border-radius:8px;font-size:11px;color:#92400e;font-weight:600;text-align:center;line-height:1.4">
+                🍽️ Break<br>14:30–15:00
+            </div>
+            <?php endif; ?>
+            <a href="../teacher/mark-attendance.php?class=<?= urlencode($selectedClass) ?>&period=<?= $p ?>"
+               style="position:relative;display:inline-flex;flex-direction:column;align-items:center;padding:8px 14px;border-radius:8px;text-decoration:none;font-size:12px;font-weight:600;min-width:72px;text-align:center;border:2px solid <?= $done?'#10b981':($partial?'#f59e0b':'#e2e8f0') ?>;background:<?= $done?'#f0fdf4':($partial?'#fffbeb':'#f8fafc') ?>;color:<?= $done?'#065f46':($partial?'#92400e':'#475569') ?>;transition:all .15s"
+               onmouseover="this.style.borderColor='#1e40af';this.style.color='#1e40af'"
+               onmouseout="this.style.borderColor='<?= $done?'#10b981':($partial?'#f59e0b':'#e2e8f0') ?>'";this.style.color='<?= $done?'#065f46':($partial?'#92400e':'#475569') ?>'">
+                P<?= $p ?>
+                <span style="font-size:10px;font-weight:400;margin-top:2px;color:#94a3b8"><?= $pt['time'] ?></span>
+                <?php if ($done): ?>
+                <span style="position:absolute;top:-6px;right:-6px;background:#10b981;color:#fff;border-radius:50%;width:16px;height:16px;font-size:9px;display:flex;align-items:center;justify-content:center">✓</span>
+                <?php elseif ($partial): ?>
+                <span style="position:absolute;top:-6px;right:-6px;background:#f59e0b;color:#fff;border-radius:50%;width:16px;height:16px;font-size:9px;display:flex;align-items:center;justify-content:center"><?= $marked ?></span>
+                <?php endif; ?>
+            </a>
+            <?php endforeach; ?>
+        </div>
+        <div style="margin-top:10px;font-size:12px;color:#94a3b8">
+            🟢 Fully marked &nbsp; 🟡 Partially marked &nbsp; ⬜ Not marked
         </div>
     </div>
 </div>

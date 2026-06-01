@@ -3,6 +3,7 @@ $pageTitle = 'Classes';
 require_once __DIR__ . '/../auth.php';
 requireRole('teacher', '../index.php');
 require_once __DIR__ . '/../header.php';
+require_once __DIR__ . '/../periods.php';
 
 $db = getDB();
 $today = date('Y-m-d');
@@ -106,13 +107,15 @@ $totalAbsent   = array_sum(array_column($classes,'absent_today'));
 
                 <!-- Action buttons -->
                 <div style="display:flex;gap:8px;flex-wrap:wrap">
-                    <?php for($p=1;$p<=6;$p++): ?>
+                    <?php foreach(PERIOD_TIMES as $p=>$pt): ?>
+                    <?php if($p===4): ?><div style="width:3px"></div><?php endif; ?>
+                    <?php if($p===7): ?><div style="width:3px"></div><?php endif; ?>
                     <a href="mark-attendance.php?class=<?= urlencode($cls['class']) ?>&period=<?= $p ?>"
                        class="btn btn-sm <?= $p==1?'btn-primary':'btn-secondary' ?>"
-                       style="font-size:12px;padding:6px 10px">
+                       style="font-size:12px;padding:6px 10px" title="<?= $pt['time'] ?>">
                         P<?= $p ?>
                     </a>
-                    <?php endfor; ?>
+                    <?php endforeach; ?>
                     <a href="../admin/class-performance.php?class=<?= urlencode($cls['class']) ?>" class="btn btn-sm btn-secondary" style="font-size:12px;padding:6px 10px;margin-left:auto">
                         <i data-feather="bar-chart-2" style="width:14px;height:14px"></i> Performance
                     </a>

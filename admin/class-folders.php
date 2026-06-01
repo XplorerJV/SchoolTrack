@@ -3,6 +3,7 @@ $pageTitle = 'Class Folders';
 require_once __DIR__ . '/../auth.php';
 requireRole('admin', '../index.php');
 require_once __DIR__ . '/../header.php';
+require_once __DIR__ . '/../periods.php';
 
 $db    = getDB();
 $today = date('Y-m-d');
@@ -27,6 +28,14 @@ foreach ($stmt->fetchAll() as $r) {
     if ($c < 1 || $c > 10) continue;
     $classes[$c][$r['status']] = (int)$r['cnt'];
     $classes[$c]['marked'] += (int)$r['cnt'];
+}
+
+// Per-class per-period stats
+$periodStats = [];
+$stmt = $db->prepare("SELECT s.class,sa.period,COUNT(*) as cnt FROM students s JOIN student_attendance sa ON s.id=sa.student_id WHERE sa.date=? GROUP BY s.class,sa.period");
+$stmt->execute([$today]);
+foreach ($stmt->fetchAll() as $r) {
+    $periodStats[$r['class']][$r['period']] = (int)$r['cnt'];
 }
 ?>
 
@@ -108,13 +117,32 @@ foreach ($stmt->fetchAll() as $r) {
                 </div>
                 <?php endif; ?>
 
+                <!-- 9 Period buttons with breaks -->
+                <div style="margin-bottom:10px">
+                    <div style="font-size:11px;color:#94a3b8;font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Mark by Period</div>
+                    <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">
+                        <?php foreach(PERIOD_TIMES as $p=>$pt):
+                            $cnt  = $periodStats[$c['class']][$p] ?? 0;
+                            $done = $c['total']>0 && $cnt>=$c['total'];
+                            $part = $cnt>0 && !$done;
+                            $bc   = $done?'#10b981':($part?'#f59e0b':'#e2e8f0');
+                            $bg   = $done?'#f0fdf4':($part?'#fffbeb':'#f8fafc');
+                            $fc   = $done?'#065f46':($part?'#92400e':'#475569');
+                        ?>
+                        <?php if($p===4||$p===7): ?><div style="width:1px;height:24px;background:#e2e8f0;margin:0 1px"></div><?php endif; ?>
+                        <a href="../teacher/mark-attendance.php?class=<?= urlencode($c['class']) ?>&period=<?= $p ?>"
+                           title="<?= $pt['time'] ?>" style="position:relative;display:inline-flex;align-items:center;justify-content:center;padding:4px 7px;border-radius:5px;text-decoration:none;font-size:11px;font-weight:700;border:1.5px solid <?= $bc ?>;background:<?= $bg ?>;color:<?= $fc ?>;min-width:30px">
+                            P<?= $p ?>
+                            <?php if($done): ?><span style="position:absolute;top:-5px;right:-5px;background:#10b981;color:#fff;border-radius:50%;width:12px;height:12px;font-size:8px;display:flex;align-items:center;justify-content:center">✓</span><?php endif; ?>
+                        </a>
+                        <?php endforeach; ?>
+                    </div>
+                    <div style="font-size:10px;color:#94a3b8;margin-top:5px">☕ 11:00–11:30 &nbsp;|&nbsp; 🍽️ 14:30–15:00</div>
+                </div>
                 <!-- Action buttons -->
                 <div style="display:flex;gap:8px">
                     <a href="class-folder.php?class=<?= urlencode($c['class']) ?>" class="btn btn-sm btn-primary" style="flex:1;justify-content:center">
                         <i data-feather="folder-open"></i> Open
-                    </a>
-                    <a href="../teacher/mark-attendance.php?class=<?= urlencode($c['class']) ?>" class="btn btn-sm btn-secondary" style="flex:1;justify-content:center">
-                        <i data-feather="check-square"></i> Mark
                     </a>
                     <a href="class-performance.php?class=<?= urlencode($c['class']) ?>" class="btn btn-sm btn-secondary" style="padding:6px 10px">
                         <i data-feather="bar-chart-2"></i>
