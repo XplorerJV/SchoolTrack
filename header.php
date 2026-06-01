@@ -9,8 +9,11 @@ $navItems = [];
 if ($role === 'admin') {
     $navItems = [
         ['url'=>'dashboard.php','icon'=>'grid','label'=>'Dashboard'],
+        ['url'=>'class-folders.php','icon'=>'folder','label'=>'Class Folders'],
         ['url'=>'students.php','icon'=>'users','label'=>'Students'],
-        ['url'=>'teachers.php','icon'=>'briefcase','label'=>'Teachers'],        ['url'=>'principals.php','icon'=>'user-check','label'=>'Principals'],        ['url'=>'attendance.php','icon'=>'check-square','label'=>'Attendance'],
+        ['url'=>'teachers.php','icon'=>'briefcase','label'=>'Teachers'],
+        ['url'=>'principals.php','icon'=>'user-check','label'=>'Principals'],
+        ['url'=>'attendance.php','icon'=>'check-square','label'=>'Attendance'],
         ['url'=>'daily-report.php','icon'=>'calendar','label'=>'Daily Report'],
         ['url'=>'performance.php','icon'=>'trending-up','label'=>'Performance'],
         ['url'=>'reports.php','icon'=>'bar-chart-2','label'=>'Reports'],
@@ -20,14 +23,15 @@ if ($role === 'admin') {
 } elseif ($role === 'principal') {
     $navItems = [
         ['url'=>'dashboard.php','icon'=>'grid','label'=>'Dashboard'],
-        ['url'=>'reports.php','icon'=>'bar-chart-2','label'=>'Reports'],
+        ['url'=>'classes.php','icon'=>'layers','label'=>'Classes'],
         ['url'=>'attendance.php','icon'=>'check-square','label'=>'Attendance'],
+        ['url'=>'reports.php','icon'=>'bar-chart-2','label'=>'Reports'],
     ];
 } elseif ($role === 'teacher') {
     $navItems = [
         ['url'=>'dashboard.php','icon'=>'grid','label'=>'Dashboard'],
+        ['url'=>'classes.php','icon'=>'layers','label'=>'Classes'],
         ['url'=>'my-attendance.php','icon'=>'check-square','label'=>'My Attendance'],
-        ['url'=>'mark-attendance.php','icon'=>'edit-2','label'=>'Mark Attendance'],
         ['url'=>'students.php','icon'=>'users','label'=>'Students'],
     ];
 }

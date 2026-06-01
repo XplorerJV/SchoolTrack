@@ -1,16 +1,24 @@
-# Ignore uploaded files and system artifacts
-uploads/
+# Uploaded files
+uploads/*
+!uploads/.gitkeep
+
+# Temp/setup scripts (remove after use)
+generate_sql.php
+setup_complete.php
+add_teachers.php
+mark_today_attendance.php
+check_db.php
+
+# Logs and cache
 *.log
 *.cache
 *.bak
 *.tmp
-.DS_Store
-Thumbs.db
 
-# Ignore editor settings
+# Editor
 .vscode/
 .idea/
-
-# Ignore OS files
+.DS_Store
+Thumbbs.db
 *.swp
 *.swo

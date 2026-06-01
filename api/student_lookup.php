@@ -6,6 +6,7 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 
 $cardUid = trim($_GET['card_uid'] ?? '');
 $date    = trim($_GET['date'] ?? date('Y-m-d'));
+$period  = (int)($_GET['period'] ?? 1);
 
 if (empty($cardUid)) {
     echo json_encode(['success' => false, 'message' => 'Card UID required']);
@@ -24,8 +25,8 @@ try {
         exit;
     }
 
-    $stmt = $db->prepare("SELECT status, time_in FROM student_attendance WHERE student_id = ? AND date = ?");
-    $stmt->execute([$student['id'], $date]);
+    $stmt = $db->prepare("SELECT status, time_in FROM student_attendance WHERE student_id = ? AND date = ? AND period = ?");
+    $stmt->execute([$student['id'], $date, $period]);
     $attendance = $stmt->fetch();
 
     echo json_encode([

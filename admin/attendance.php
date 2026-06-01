@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Get unique classes
-$stmt = $db->prepare("SELECT DISTINCT class FROM students WHERE is_active = 1 ORDER BY class");
+$stmt = $db->prepare("SELECT DISTINCT class FROM students WHERE is_active = 1 ORDER BY CAST(class AS UNSIGNED)");
 $stmt->execute();
 $classes = $stmt->fetchAll();
 
@@ -52,7 +52,7 @@ if (!empty($filterStatus)) {
     $params[] = $filterStatus;
 }
 
-$query .= " ORDER BY s.class, s.roll_number";
+$query .= " ORDER BY CAST(s.class AS UNSIGNED), s.roll_number";
 
 $stmt = $db->prepare($query);
 $stmt->execute($params);

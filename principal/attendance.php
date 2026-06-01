@@ -1,190 +1,311 @@
 <?php
-$pageTitle = 'View Attendance';
+$pageTitle = 'Class Attendance Report';
 require_once __DIR__ . '/../auth.php';
 requireRole('principal', '../index.php');
 require_once __DIR__ . '/../header.php';
 
 $db = getDB();
-$filterDate = $_GET['date'] ?? date('Y-m-d');
-$filterClass = $_GET['class'] ?? '';
-$filterStatus = $_GET['status'] ?? '';
+$selectedClass = $_GET['class'] ?? '';
+$startDate = $_GET['start_date'] ?? date('Y-m-01');
+$endDate = $_GET['end_date'] ?? date('Y-m-d');
 
-// Get unique classes
-$stmt = $db->prepare("SELECT DISTINCT class FROM students WHERE is_active = 1 ORDER BY class");
-$stmt->execute();
-$classes = $stmt->fetchAll();
-
-// Get attendance records
-$query = "
-    SELECT sa.*, s.name, s.roll_number, s.class, s.section
-    FROM student_attendance sa
-    JOIN students s ON s.id = sa.student_id
-    WHERE sa.date = ?
-";
-$params = [$filterDate];
-
-if (!empty($filterClass)) {
-    $query .= " AND s.class = ?";
-    $params[] = $filterClass;
+if (empty($selectedClass)) {
+    header('Location: classes.php');
+    exit;
 }
 
-if (!empty($filterStatus)) {
-    $query .= " AND sa.status = ?";
-    $params[] = $filterStatus;
-}
-
-$query .= " ORDER BY s.class, s.roll_number";
-
-$stmt = $db->prepare($query);
-$stmt->execute($params);
-$attendance = $stmt->fetchAll();
-
-// Get attendance stats
+// Get class info
 $stmt = $db->prepare("
     SELECT 
-        status,
-        COUNT(*) as count
-    FROM student_attendance
-    WHERE date = ?
-    GROUP BY status
+        COUNT(*) as total_students,
+        COUNT(DISTINCT section) as sections
+    FROM students 
+    WHERE class = ? AND is_active = 1
 ");
-$stmt->execute([$filterDate]);
-$stats = $stmt->fetchAll();
-$statsMap = [];
-foreach ($stats as $stat) {
-    $statsMap[$stat['status']] = $stat['count'];
+$stmt->execute([$selectedClass]);
+$classInfo = $stmt->fetch();
+// Get student performance for selected period
+$stmt = $db->prepare("
+    SELECT 
+        s.id, 
+        s.roll_number, 
+        s.name, 
+        s.section,
+        COUNT(sa.id) as total_days,
+        SUM(CASE WHEN sa.status = 'present' THEN 1 ELSE 0 END) as present,
+        SUM(CASE WHEN sa.status = 'absent' THEN 1 ELSE 0 END) as absent,
+        SUM(CASE WHEN sa.status = 'late' THEN 1 ELSE 0 END) as late,
+        SUM(CASE WHEN sa.status = 'excused' THEN 1 ELSE 0 END) as excused
+    FROM students s
+    LEFT JOIN student_attendance sa ON s.id = sa.student_id AND sa.date BETWEEN ? AND ?
+    WHERE s.class = ? AND s.is_active = 1
+    GROUP BY s.id, s.roll_number, s.name, s.section
+    ORDER BY s.roll_number
+");
+$stmt->execute([$startDate, $endDate, $selectedClass]);
+$students = $stmt->fetchAll();
+
+// Calculate class-wide statistics
+$classStats = [
+    'total_marked' => 0,
+    'total_present' => 0,
+    'total_absent' => 0,
+    'total_late' => 0,
+    'total_excused' => 0,
+    'attendance_percentage' => 0
+];
+
+foreach ($students as $student) {
+    $classStats['total_marked'] += $student['total_days'];
+    $classStats['total_present'] += $student['present'];
+    $classStats['total_absent'] += $student['absent'];
+    $classStats['total_late'] += $student['late'];
+    $classStats['total_excused'] += $student['excused'];
 }
+
+if ($classStats['total_marked'] > 0) {
+    $classStats['attendance_percentage'] = round(($classStats['total_present'] / $classStats['total_marked']) * 100, 2);
+}
+
+// Get daily breakdown for the period
+$stmt = $db->prepare("
+    SELECT 
+        sa.date,
+        COUNT(DISTINCT CASE WHEN sa.status = 'present' THEN sa.student_id END) as present,
+        COUNT(DISTINCT CASE WHEN sa.status = 'absent' THEN sa.student_id END) as absent,
+        COUNT(DISTINCT CASE WHEN sa.status = 'late' THEN sa.student_id END) as late,
+        COUNT(DISTINCT CASE WHEN sa.status = 'excused' THEN sa.student_id END) as excused,
+        COUNT(DISTINCT sa.student_id) as total_marked
+    FROM student_attendance sa
+    JOIN students s ON sa.student_id = s.id
+    WHERE s.class = ? AND sa.date BETWEEN ? AND ?
+    GROUP BY sa.date
+    ORDER BY sa.date DESC
+");
+$stmt->execute([$selectedClass, $startDate, $endDate]);
+$dailyBreakdown = $stmt->fetchAll();
 ?>
 
 <div class="page-header">
     <div class="header-content">
-        <h1><i data-feather="check-square"></i> View Attendance</h1>
-        <p>School-wide attendance records for the selected date</p>
+        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+            <div>
+                <h1><i data-feather="bar-chart-2"></i> Class <?php echo htmlspecialchars($selectedClass); ?> - Attendance Report</h1>
+                <p>Period: <?php echo htmlspecialchars($startDate); ?> to <?php echo htmlspecialchars($endDate); ?></p>
+            </div>
+            <a href="classes.php" class="btn btn-secondary" style="margin-top: 10px;">
+                <i data-feather="arrow-left"></i> Back to Classes
+            </a>
+        </div>
     </div>
 </div>
 
 <div class="page-content">
-    <!-- Filters -->
-    <div class="card mb-6">
-        <div class="card-body">
-            <form method="GET" class="form">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Date</label>
-                        <input type="date" name="date" value="<?= $filterDate ?>" onchange="this.form.submit()">
+    <!-- Class Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stat-box">
+                <p>Total Students</p>
+                <h3><?php echo $classInfo['total_students']; ?></h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-box success">
+                <p>Attendance Rate</p>
+                <h3><?php echo $classStats['attendance_percentage']; ?>%</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-box warning">
+                <p>Days Recorded</p>
+                <h3><?php echo $classStats['total_marked'] > 0 ? round($classStats['total_marked'] / $classInfo['total_students']) : 0; ?></h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-box info">
+                <p>Sections</p>
+                <h3><?php echo $classInfo['sections']; ?></h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- Date Filter -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="get" style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                        <input type="hidden" name="class" value="<?php echo htmlspecialchars($selectedClass); ?>">
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <label><strong>From:</strong></label>
+                            <input type="date" name="start_date" value="<?php echo htmlspecialchars($startDate); ?>" class="form-control">
+                        </div>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <label><strong>To:</strong></label>
+                            <input type="date" name="end_date" value="<?php echo htmlspecialchars($endDate); ?>" class="form-control">
+                        </div>
+                        <button type="submit" class="btn btn-primary"><i data-feather="search"></i> Filter</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Period Summary</h3>
+                </div>
+                <div class="card-body">
+                    <div class="summary-row">
+                        <span>Total Attendance Records:</span>
+                        <strong><?php echo $classStats['total_marked']; ?></strong>
                     </div>
-                    <div class="form-group">
-                        <label>Class</label>
-                        <select name="class" onchange="this.form.submit()">
-                            <option value="">All Classes</option>
-                            <?php foreach ($classes as $cls): ?>
-                            <option value="<?= htmlspecialchars($cls['class']) ?>" <?= $filterClass === $cls['class'] ? 'selected' : '' ?>>
-                                <?= htmlspecialchars($cls['class']) ?>
-                            </option>
-                            <?php endforeach; ?>
-                        </select>
+                    <div class="summary-row">
+                        <span>Present:</span>
+                        <strong class="text-success"><?php echo $classStats['total_present']; ?></strong>
                     </div>
-                    <div class="form-group">
-                        <label>Status</label>
-                        <select name="status" onchange="this.form.submit()">
-                            <option value="">All Statuses</option>
-                            <option value="present" <?= $filterStatus === 'present' ? 'selected' : '' ?>>Present</option>
-                            <option value="absent" <?= $filterStatus === 'absent' ? 'selected' : '' ?>>Absent</option>
-                            <option value="late" <?= $filterStatus === 'late' ? 'selected' : '' ?>>Late</option>
-                            <option value="excused" <?= $filterStatus === 'excused' ? 'selected' : '' ?>>Excused</option>
-                        </select>
+                    <div class="summary-row">
+                        <span>Absent:</span>
+                        <strong class="text-danger"><?php echo $classStats['total_absent']; ?></strong>
+                    </div>
+                    <div class="summary-row">
+                        <span>Late:</span>
+                        <strong class="text-warning"><?php echo $classStats['total_late']; ?></strong>
+                    </div>
+                    <div class="summary-row">
+                        <span>Excused:</span>
+                        <strong class="text-info"><?php echo $classStats['total_excused']; ?></strong>
                     </div>
                 </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Stats -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div class="stat-card">
-            <div class="stat-icon" style="background:rgba(34,197,94,.1)">
-                <i data-feather="check-circle" style="color:#22c55e"></i>
-            </div>
-            <div class="stat-content">
-                <p class="stat-label">Present</p>
-                <p class="stat-value"><?= $statsMap['present'] ?? 0 ?></p>
             </div>
         </div>
-        <div class="stat-card">
-            <div class="stat-icon" style="background:rgba(239,68,68,.1)">
-                <i data-feather="x-circle" style="color:#ef4444"></i>
-            </div>
-            <div class="stat-content">
-                <p class="stat-label">Absent</p>
-                <p class="stat-value"><?= $statsMap['absent'] ?? 0 ?></p>
-            </div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon" style="background:rgba(245,158,11,.1)">
-                <i data-feather="alert-circle" style="color:#f59e0b"></i>
-            </div>
-            <div class="stat-content">
-                <p class="stat-label">Late</p>
-                <p class="stat-value"><?= $statsMap['late'] ?? 0 ?></p>
-            </div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon" style="background:rgba(59,130,246,.1)">
-                <i data-feather="info" style="color:#3b82f6"></i>
-            </div>
-            <div class="stat-content">
-                <p class="stat-label">Excused</p>
-                <p class="stat-value"><?= $statsMap['excused'] ?? 0 ?></p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Attendance Table -->
-    <div class="card">
-        <div class="card-header">
-            <h3><i data-feather="table"></i> Attendance for <?= formatDate($filterDate) ?> (<?= count($attendance) ?> records)</h3>
-        </div>
-        <div class="card-body">
-            <div class="table-wrapper">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Photo</th>
-                            <th>Roll No</th>
-                            <th>Student</th>
-                            <th>Class</th>
-                            <th>Status</th>
-                            <th>Time In</th>
-                            <th>Marked By</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (empty($attendance)): ?>
-                        <tr><td colspan="7" style="text-align:center;padding:20px;color:#6b7280">No records found</td></tr>
-                        <?php else: ?>
-                            <?php foreach ($attendance as $record): ?>
-                            <tr>
-                                <td>
-                                    <?php if (!empty($record['photo'])): ?>
-                                    <img src="<?= htmlspecialchars($record['photo']) ?>" alt="<?= htmlspecialchars($record['name']) ?>" style="width:42px;height:42px;border-radius:9999px;object-fit:cover;border:1px solid #e2e8f0;">
-                                    <?php else: ?>
-                                    <div style="width:42px;height:42px;border-radius:9999px;background:#e2e8f0;display:inline-flex;align-items:center;justify-content:center;color:#64748b;font-size:12px;">N/A</div>
-                                    <?php endif; ?>
-                                </td>
-                                <td><?= htmlspecialchars($record['roll_number']) ?></td>
-                                <td><?= htmlspecialchars($record['name']) ?></td>
-                                <td><?= htmlspecialchars($record['class']) ?></td>
-                                <td><span class="badge badge-<?= $record['status'] ?>"><?= ucfirst($record['status']) ?></span></td>
-                                <td><?= $record['time_in'] ? formatTime($record['time_in']) : '-' ?></td>
-                                <td><?= ucfirst($record['marked_by']) ?></td>
-                            </tr>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Recent Daily Records</h3>
+                </div>
+                <div class="card-body">
+                    <?php if (count($dailyBreakdown) === 0): ?>
+                        <p class="text-muted">No attendance data for selected period</p>
+                    <?php else: ?>
+                        <div class="daily-list">
+                            <?php foreach (array_slice($dailyBreakdown, 0, 5) as $day): ?>
+                                <div class="daily-item">
+                                    <div class="date-badge"><?php echo date('d M', strtotime($day['date'])); ?></div>
+                                    <div class="daily-stats">
+                                        <span class="badge badge-success"><?php echo $day['present']; ?> P</span>
+                                        <span class="badge badge-danger"><?php echo $day['absent']; ?> A</span>
+                                        <span class="badge badge-warning"><?php echo $day['late']; ?> L</span>
+                                    </div>
+                                </div>
                             <?php endforeach; ?>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student Performance Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Individual Student Performance</h2>
+                </div>
+                <div class="card-body">
+                    <?php if (empty($students)): ?>
+                        <div class="alert alert-info">
+                            <i data-feather="info"></i> No students found in this class.
+                        </div>
+                    <?php else: ?>
+                        <div class="table-responsive">
+                            <table class="table table-hover table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Roll #</th>
+                                        <th>Name</th>
+                                        <th>Section</th>
+                                        <th class="text-center">Days Marked</th>
+                                        <th class="text-center">Present</th>
+                                        <th class="text-center">Absent</th>
+                                        <th class="text-center">Late</th>
+                                        <th class="text-center">Attendance %</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($students as $student): ?>
+                                        <?php 
+                                        $percentage = $student['total_days'] > 0 ? 
+                                            round(($student['present'] / $student['total_days']) * 100) : 0;
+                                        $statusClass = $percentage >= 90 ? 'success' : ($percentage >= 75 ? 'warning' : 'danger');
+                                        ?>
+                                        <tr>
+                                            <td><strong><?php echo htmlspecialchars($student['roll_number']); ?></strong></td>
+                                            <td><?php echo htmlspecialchars($student['name']); ?></td>
+                                            <td><?php echo htmlspecialchars($student['section'] ?? '-'); ?></td>
+                                            <td class="text-center">
+                                                <span class="badge badge-secondary"><?php echo $student['total_days']; ?></span>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge badge-success"><?php echo $student['present']; ?></span>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge badge-danger"><?php echo $student['absent']; ?></span>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge badge-warning"><?php echo $student['late']; ?></span>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge badge-<?php echo $statusClass; ?>"><?php echo $percentage; ?>%</span>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php endif; ?>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+.row { display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; }
+.col-12 { flex: 1 1 100%; }
+.col-md-3 { flex: 1 1 calc(25% - 15px); min-width: 200px; }
+.col-md-6 { flex: 1 1 calc(50% - 10px); min-width: 350px; }
+.stat-box {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.stat-box p { margin: 0 0 10px 0; font-size: 12px; color: #999; }
+.stat-box h3 { margin: 0; font-size: 28px; font-weight: bold; color: #333; }
+.stat-box.success h3 { color: #28a745; }
+.stat-box.warning h3 { color: #ffc107; }
+.stat-box.info h3 { color: #17a2b8; }
+.summary-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; }
+.summary-row:last-child { border-bottom: none; }
+.daily-list { display: flex; flex-direction: column; gap: 10px; }
+.daily-item { display: flex; align-items: center; gap: 15px; padding: 10px; background: #f9f9f9; border-radius: 5px; }
+.date-badge { background: #007bff; color: white; padding: 5px 10px; border-radius: 4px; font-weight: bold; min-width: 60px; text-align: center; }
+.daily-stats { display: flex; gap: 8px; }
+.text-success { color: #28a745; }
+.text-danger { color: #dc3545; }
+.text-warning { color: #ffc107; }
+.text-info { color: #17a2b8; }
+.text-muted { color: #6c757d; }
+.text-center { text-align: center; }
+.table { width: 100%; border-collapse: collapse; }
+.table th { background: #f8f9fa; padding: 12px; border-bottom: 2px solid #dee2e6; font-weight: 600; }
+.table td { padding: 12px; border-bottom: 1px solid #dee2e6; }
+.table tr:hover { background: #f9f9f9; }
+</style>
 
 <?php require_once __DIR__ . '/../footer.php'; ?>
