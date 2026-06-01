@@ -10,6 +10,10 @@ $schoolName    = getSetting('school_name') ?: 'Springfield Public School';
 $schoolAddress = getSetting('school_address') ?: '';
 $schoolLogo    = getSetting('school_logo') ?: '';
 
+// Fetch teachers for quick-select
+$db = getDB();
+$teachers = $db->query("SELECT name, email FROM users WHERE role='teacher' AND is_active=1 ORDER BY name")->fetchAll();
+
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email    = trim($_POST['email'] ?? '');
@@ -187,18 +191,28 @@ body{font-family:'Inter',sans-serif;min-height:100vh;display:flex;background:#0f
             </form>
 
             <div class="demo-creds">
-                <div class="demo-title">Demo Credentials (click to fill)</div>
+                <div class="demo-title">Quick Login</div>
                 <div class="demo-item" onclick="fillCreds('admin@school.com','password')">
                     <span class="role-badge rb-admin">Admin</span>
-                    <span class="demo-email">admin@school.com / password</span>
+                    <span class="demo-email">admin@school.com</span>
                 </div>
                 <div class="demo-item" onclick="fillCreds('principal@school.com','password')">
                     <span class="role-badge rb-principal">Principal</span>
-                    <span class="demo-email">principal@school.com / password</span>
+                    <span class="demo-email">principal@school.com</span>
                 </div>
-                <div class="demo-item" onclick="fillCreds('teacher@school.com','password')">
-                    <span class="role-badge rb-teacher">Teacher</span>
-                    <span class="demo-email">teacher@school.com / password</span>
+                <div class="demo-item" onclick="toggleTeacherList()" style="flex-direction:column;align-items:flex-start;gap:8px">
+                    <div style="display:flex;justify-content:space-between;width:100%">
+                        <span class="role-badge rb-teacher">Teacher</span>
+                        <span style="font-size:11px;color:rgba(255,255,255,.4)" id="teacherToggleHint">▼ Select teacher</span>
+                    </div>
+                    <div id="teacherList" style="display:none;width:100%;max-height:180px;overflow-y:auto;border-top:1px solid rgba(255,255,255,.08);padding-top:8px;">
+                        <?php foreach($teachers as $t): ?>
+                        <div onclick="event.stopPropagation();fillCreds('<?= htmlspecialchars($t['email']) ?>','password')" style="padding:7px 8px;border-radius:6px;cursor:pointer;font-size:12px;color:rgba(255,255,255,.7);transition:background .15s" onmouseover="this.style.background='rgba(59,130,246,.15)'" onmouseout="this.style.background='transparent'">
+                            <span style="color:#93c5fd;font-weight:600"><?= htmlspecialchars($t['name']) ?></span>
+                            <span style="color:rgba(255,255,255,.35);margin-left:6px;font-family:monospace"><?= htmlspecialchars($t['email']) ?></span>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
                 </div>
             </div>
         </div>
@@ -210,6 +224,14 @@ feather.replace();
 function fillCreds(e,p){
     document.getElementById('emailField').value=e;
     document.getElementById('passField').value=p;
+    document.getElementById('teacherList').style.display='none';
+    document.getElementById('teacherToggleHint').textContent='▼ Select teacher';
+}
+function toggleTeacherList(){
+    var list=document.getElementById('teacherList');
+    var hint=document.getElementById('teacherToggleHint');
+    if(list.style.display==='none'){list.style.display='block';hint.textContent='▲ Close';}
+    else{list.style.display='none';hint.textContent='▼ Select teacher';}
 }
 </script>
 </body>
