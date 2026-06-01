@@ -1,13 +1,42 @@
 <?php
-$pageTitle = 'Class Performance';
 require_once __DIR__ . '/../auth.php';
 requireRole(['admin','principal'], '../index.php');
-require_once __DIR__ . '/../header.php';
+require_once __DIR__ . '/../config.php';
 
-$db = getDB();
 $selectedClass = $_GET['class'] ?? '';
 $startDate     = $_GET['start_date'] ?? date('Y-m-01');
 $endDate       = $_GET['end_date']   ?? date('Y-m-d');
+
+if (isset($_GET['export']) && $_GET['export'] === 'csv' && !empty($selectedClass)) {
+    $db = getDB();
+    $stmt = $db->prepare("
+        SELECT s.roll_number, s.name, s.section, s.gender,
+            COUNT(DISTINCT sa.date) as total_days,
+            SUM(CASE WHEN sa.status='present' THEN 1 ELSE 0 END) as present,
+            SUM(CASE WHEN sa.status='absent'  THEN 1 ELSE 0 END) as absent,
+            SUM(CASE WHEN sa.status='late'    THEN 1 ELSE 0 END) as late
+        FROM students s
+        LEFT JOIN student_attendance sa ON s.id=sa.student_id AND sa.date BETWEEN ? AND ? AND sa.period=1
+        WHERE s.class=? AND s.is_active=1
+        GROUP BY s.id ORDER BY s.roll_number
+    ");
+    $stmt->execute([$startDate, $endDate, $selectedClass]);
+    $students = $stmt->fetchAll();
+
+    $headers = ['Roll No','Name','Section','Gender','Days Marked','Present','Absent','Late','Attendance %'];
+    $rows = [];
+    foreach ($students as $s) {
+        $pct = $s['total_days'] > 0 ? round(($s['present'] / $s['total_days']) * 100, 1) : 0;
+        $rows[] = [$s['roll_number'],$s['name'],$s['section']??'',$s['gender']??'',$s['total_days'],$s['present'],$s['absent'],$s['late'],$pct.'%'];
+    }
+    exportCSV("class{$selectedClass}_performance_{$startDate}.csv", $headers, $rows);
+    exit;
+}
+
+$pageTitle = 'Class Performance';
+require_once __DIR__ . '/../header.php';
+
+$db = getDB();
 
 if (empty($selectedClass)) {
     header('Location: classes.php'); exit;
@@ -172,18 +201,7 @@ $classes = $db->query("SELECT DISTINCT class FROM students WHERE is_active=1 ORD
             <a href="?class=<?= urlencode($selectedClass) ?>&start_date=<?= $startDate ?>&end_date=<?= $endDate ?>&export=csv" class="btn btn-sm btn-secondary"><i data-feather="download"></i> Export CSV</a>
         </div>
         <div class="card-body" style="padding:0">
-            <?php
-            // CSV export
-            if (isset($_GET['export']) && $_GET['export']==='csv') {
-                $headers = ['Roll No','Name','Section','Gender','Days Marked','Present','Absent','Late','Attendance %'];
-                $rows = [];
-                foreach($students as $s) {
-                    $pct = $s['total_days']>0 ? round(($s['present']/$s['total_days'])*100,1) : 0;
-                    $rows[] = [$s['roll_number'],$s['name'],$s['section']??'',$s['gender']??'',$s['total_days'],$s['present'],$s['absent'],$s['late'],$pct.'%'];
-                }
-                exportCSV("class{$selectedClass}_performance_{$startDate}.csv", $headers, $rows);
-            }
-            ?>
+
             <?php if (empty($students)): ?>
             <div style="padding:30px;text-align:center;color:#6b7280">No students found in this class.</div>
             <?php else: ?>
