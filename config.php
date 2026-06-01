@@ -10,10 +10,7 @@ define('DB_PORT', '3306');
 
 // App Config
 define('APP_NAME', 'SchoolTrack');
-$_protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-$_host     = $_SERVER['HTTP_HOST'] ?? 'localhost';
-$_base     = rtrim(dirname(dirname($_SERVER['SCRIPT_NAME'] ?? '')), '/\\');
-define('APP_URL', $_protocol . '://' . $_host . ($_base === '/' ? '' : $_base) . '/school');
+define('APP_URL', 'http://localhost/school'); // Change to your URL
 define('APP_VERSION', '1.0.0');
 
 define('UPLOADS_DIR', __DIR__ . '/uploads');
