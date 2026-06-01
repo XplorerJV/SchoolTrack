@@ -1,7 +1,7 @@
 -- ============================================================
 -- SchoolTrack NFC ERP — Complete Database
 -- Classes 1-10, 50 students each, 10 teachers, period-wise attendance
--- Generated: 2026-06-01 13:43:56
+-- Generated: 2026-06-01 13:46:53
 -- ============================================================
 
 SET FOREIGN_KEY_CHECKS=0;
