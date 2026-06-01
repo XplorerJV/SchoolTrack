@@ -114,10 +114,13 @@ foreach ($stmt->fetchAll() as $r) {
                 </div>
 
                 <div style="display:flex;gap:8px">
-                    <a href="../admin/class-performance.php?class=<?= urlencode($c['class']) ?>" class="btn btn-sm btn-primary" style="flex:1;justify-content:center">
-                        <i data-feather="bar-chart-2"></i> Performance
+                    <a href="class-folder.php?class=<?= urlencode($c['class']) ?>" class="btn btn-sm btn-secondary" style="flex:1;justify-content:center">
+                        <i data-feather="folder-open"></i> Folder
                     </a>
-                    <a href="attendance.php?class=<?= urlencode($c['class']) ?>" class="btn btn-sm btn-secondary" style="flex:1;justify-content:center">
+                    <a href="../admin/class-performance.php?class=<?= urlencode($c['class']) ?>" class="btn btn-sm btn-primary" style="flex:1;justify-content:center">
+                        <i data-feather="bar-chart-2"></i> Perf
+                    </a>
+                    <a href="attendance.php?class=<?= urlencode($c['class']) ?>" class="btn btn-sm btn-info" style="flex:1;justify-content:center">
                         <i data-feather="eye"></i> View
                     </a>
                 </div>

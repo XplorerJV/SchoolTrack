@@ -121,7 +121,7 @@ foreach ($stmt->fetchAll() as $r) {
                 </div>
 
                 <!-- Open folder -->
-                <a href="../admin/class-folder.php?class=<?= urlencode($c['class']) ?>" class="btn btn-sm btn-secondary" style="width:100%;justify-content:center">
+                <a href="class-folder.php?class=<?= urlencode($c['class']) ?>" class="btn btn-sm btn-secondary" style="width:100%;justify-content:center">
                     <i data-feather="folder-open"></i> Open Class Folder
                 </a>
             </div>
