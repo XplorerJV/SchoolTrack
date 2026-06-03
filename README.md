@@ -2,51 +2,61 @@
 
 A complete PHP-based school attendance management system with RFID/NFC card integration, period-wise attendance, real-time dashboards, class-wise performance tracking, and role-based access for Admin, Principal, and Teacher.
 
-**Version:** 2.0.0 | **Status:** Production Ready
+**Version:** 2.0.0 | **Status:** Production Ready | **PHP:** 8.0+ | **DB:** MySQL 5.7+
 
 ---
 
-## 🚀 Quick Start
+## 📦 Download & Setup (ZIP)
 
-### Prerequisites
-- PHP 8.0+ with PDO MySQL
-- MySQL 5.7+ / MariaDB 10.4+
-- XAMPP / LAMP / LEMP
+### Step 1 — Download
+- Click the green **Code** button → **Download ZIP**
+- Extract the ZIP — you will get a folder named `SchoolTrack-master` (or similar)
+- Rename it to **`school`**
 
-### Installation
+### Step 2 — Move to Web Server
+| Server | Folder Path |
+|--------|-------------|
+| XAMPP (Windows) | `C:\xampp\htdocs\school` |
+| XAMPP (Mac) | `/Applications/XAMPP/htdocs/school` |
+| LAMP (Linux) | `/var/www/html/school` |
 
+### Step 3 — Import Database
+
+**Option A — phpMyAdmin (Recommended for beginners)**
+1. Start Apache + MySQL in XAMPP Control Panel
+2. Open `http://localhost/phpmyadmin`
+3. Click **New** → Database name: `school_attendance` → Create
+4. Select `school_attendance` database → Click **Import** tab
+5. Choose `database.sql` from the project folder → Click **Go**
+
+**Option B — Command Line**
 ```bash
-# 1. Clone the repo
-git clone https://github.com/joyboy-pega/nfc-school-erp.git
-cd nfc-school-erp
-
-# 2. Import database
 mysql -u root -p < database.sql
-
-# 3. Configure
-# Edit config.php — set DB credentials and APP_URL
 ```
 
-### config.php
+### Step 4 — Configure `config.php`
+
+Open `school/config.php` and verify these lines (default values work for XAMPP):
+
 ```php
 define('DB_HOST', 'localhost');
 define('DB_USER', 'root');
-define('DB_PASS', '');
+define('DB_PASS', '');               // Add password if your MySQL has one
 define('DB_NAME', 'school_attendance');
-define('APP_URL',  'http://localhost/school');
+define('APP_URL', 'http://localhost/school');
 ```
 
-### Access
-- **URL:** `http://localhost/school`
-- **Admin:** admin@school.com / `password`
-- **Principal:** principal@school.com / `password`
-- **Teachers:** teacher1@school.com … teacher10@school.com / `password`
+### Step 5 — Open in Browser
 
-> ⚠️ Change all passwords immediately in production!
+```
+http://localhost/school
+```
+
+You should see the login page. ✅
 
 ---
 
-## 👥 Default Accounts
+## 🔐 Default Login Credentials
 
 | Role | Email | Password |
 |------|-------|----------|
@@ -55,23 +65,20 @@ define('APP_URL',  'http://localhost/school');
 | Teacher 1 (Maths) | teacher1@school.com | password |
 | Teacher 2 (Science) | teacher2@school.com | password |
 | Teacher 3 (English) | teacher3@school.com | password |
-| Teacher 4–10 | teacher4–10@school.com | password |
+| Teacher 4–10 | teacher4@school.com … teacher10@school.com | password |
+
+> ⚠️ Change all passwords immediately after first login in production!
 
 ---
 
-## 📊 Database — What's Included
+## 👥 What's Included in the Database
 
 | Table | Records |
 |-------|---------|
 | Students | **500** (50 per class, Class 1–10) |
-| Teachers | 10 (+ 1 Admin + 1 Principal) |
+| Teachers | 10 + 1 Admin + 1 Principal |
 | Classes | 10 (Class 1 to Class 10) |
 | Attendance | Sample data — last 30 days |
-
-### Student Details per Record
-- Roll Number, Name, Class, Section (A/B)
-- Gender, Date of Birth, Address, Contact
-- Parent Email, Parent Phone, RFID Card UID
 
 ---
 
@@ -79,6 +86,7 @@ define('APP_URL',  'http://localhost/school');
 
 ### 🔐 Authentication
 - Role-based access: Admin / Principal / Teacher
+- Teacher quick-select on login page
 - Session timeout (1 hour)
 - Audit logging for all actions
 
@@ -91,12 +99,11 @@ define('APP_URL',  'http://localhost/school');
 
 ### 📡 Real-time Dashboard
 - Live clock (updates every second)
-- Attendance stats auto-refresh every **30 seconds**
+- Attendance stats auto-refresh every 30 seconds
 - Live Activity Feed — latest attendance entries
 - Class-wise breakdown with progress bars
-- "Not Marked Yet" counter
 
-### 🏫 Class Management (Class 1–10)
+### 🏫 Class Management
 - Class Folders — visual card view with daily stats
 - Color-coded: 🟢 ≥75% | 🟡 ≥50% | 🔴 <50% | ⚫ Not marked
 - Per-class performance with individual student grades
@@ -110,16 +117,16 @@ define('APP_URL',  'http://localhost/school');
 
 ### 📊 Reports
 - Daily Summary
-- Class-wise Summary (Class 1–10 ordered)
+- Class-wise Summary (Class 1–10)
 - Monthly per-student (grouped by class)
 - Teacher Attendance
 - Frequent Absentees
 - CSV export for all reports
 
-### ⚙️ Settings
-- School name, address, logo
-- Attendance times (start, late cutoff, absent cutoff)
-- Academic year
+### 📱 Mobile Responsive
+- Works on all screen sizes — mobile, tablet, desktop
+- Hamburger menu on mobile
+- Touch-friendly UI
 
 ---
 
@@ -130,30 +137,30 @@ school/
 ├── admin/
 │   ├── dashboard.php          # Real-time admin dashboard
 │   ├── class-folders.php      # Visual class folder cards
-│   ├── class-folder.php       # Single class — student list + profiles
-│   ├── class-performance.php  # Per-class student performance
-│   ├── classes.php            # Class management table
-│   ├── students.php           # Student CRUD (with DOB, gender, address, contact)
+│   ├── class-folder.php       # Single class — student list
+│   ├── class-performance.php  # Per-class student performance + CSV export
+│   ├── classes.php            # Class management
+│   ├── students.php           # Student CRUD
 │   ├── teachers.php           # Teacher management
 │   ├── attendance.php         # View/edit attendance
 │   ├── reports.php            # All reports + CSV export
 │   ├── logs.php               # Audit logs
 │   └── settings.php           # School + attendance settings
 ├── principal/
-│   ├── dashboard.php          # Real-time principal dashboard
-│   ├── class-folders.php      # Class folder view
-│   ├── classes.php            # Class overview
-│   ├── attendance.php         # View attendance
-│   └── reports.php            # Reports with class-wise summary
+│   ├── dashboard.php
+│   ├── class-folders.php
+│   ├── classes.php
+│   ├── attendance.php
+│   └── reports.php
 ├── teacher/
-│   ├── dashboard.php          # Real-time teacher dashboard
-│   ├── class-folders.php      # Class folder view
-│   ├── classes.php            # Class selection with period buttons
+│   ├── dashboard.php
+│   ├── class-folders.php
+│   ├── classes.php
 │   ├── mark-attendance.php    # Period-wise attendance marking
 │   ├── my-attendance.php      # Teacher's own attendance
-│   └── students.php           # Student list with full details
+│   └── students.php
 ├── api/
-│   ├── live_stats.php         # Real-time stats JSON API (polled every 30s)
+│   ├── live_stats.php         # Real-time stats JSON (polled every 30s)
 │   ├── attendance.php         # RFID hardware endpoint
 │   ├── mark_attendance.php    # Mark attendance via card scan
 │   ├── student_lookup.php     # Card UID → student lookup
@@ -188,24 +195,47 @@ Response:
 
 ---
 
+## 🛠️ Troubleshooting
+
+| Problem | Fix |
+|---------|-----|
+| White screen / DB error | Check `config.php` credentials, ensure MySQL is running |
+| Login not working | Verify `database.sql` was imported correctly |
+| CSS not loading | Make sure folder is named exactly `school` and `APP_URL` matches |
+| CSV export broken | Ensure no whitespace/output before PHP tags in files |
+| Images/logo not showing | Check `uploads/` folder exists and `APP_URL` is correct |
+
+---
+
 ## 🔒 Security
+
 - bcrypt password hashing
 - PDO prepared statements (SQL injection prevention)
-- XSS protection via htmlspecialchars
-- Session-based auth with timeout
+- XSS protection via `htmlspecialchars`
+- Session-based auth with 1-hour timeout
 - Role-based access control
 - Complete audit trail
 
 ---
 
 ## 🛠️ Tech Stack
+
 - **Backend:** PHP 8.x, PDO MySQL
 - **Database:** MySQL / MariaDB
 - **Frontend:** Vanilla JS, Feather Icons, Chart.js
-- **CSS:** Custom (no Bootstrap/Tailwind dependency)
+- **CSS:** Custom (no Bootstrap/Tailwind)
 - **Fonts:** Inter, Space Grotesk (Google Fonts)
 
 ---
 
+## 🗄️ Database Backup
+
+```bash
+mysqldump -u root -p school_attendance > backup.sql
+```
+
+---
+
 **Created by:** Jayesh V  
-**Repo:** https://github.com/joyboy-pega/nfc-school-erp
+**Repo:** https://github.com/joyboy-pega/nfc-school-erp  
+**Mirror:** https://github.com/XplorerJV/SchoolTrack
