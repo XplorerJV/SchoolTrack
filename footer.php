@@ -3,10 +3,22 @@
 
 <script>
 feather.replace();
-// Mobile sidebar toggle
-document.getElementById('menuToggle')?.addEventListener('click',()=>{
-    document.getElementById('sidebar').classList.toggle('open');
-});
+
+// Show hamburger on mobile
+function checkMobile(){
+    var btn = document.getElementById('menuToggle');
+    if(btn) btn.style.display = window.innerWidth <= 768 ? 'flex' : 'none';
+}
+checkMobile();
+window.addEventListener('resize', checkMobile);
+
+function toggleSidebar(){
+    var s = document.getElementById('sidebar');
+    var o = document.getElementById('sidebarOverlay');
+    s.classList.toggle('open');
+    o.classList.toggle('open');
+}
+document.getElementById('sidebarOverlay')?.addEventListener('click', toggleSidebar);
 
 // Auto dismiss alerts
 document.querySelectorAll('.alert').forEach(a=>{
