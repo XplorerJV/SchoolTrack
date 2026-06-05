@@ -74,7 +74,7 @@ foreach (['school_name','school_address','school_start_time','late_time','cutoff
                         <input type="file" name="school_logo" accept="image/png,image/jpeg,image/svg+xml">
                         <?php if (!empty($s['school_logo'])): ?>
                         <div style="margin-top:10px;display:flex;gap:10px;align-items:center">
-                            <img src="<?= htmlspecialchars($s['school_logo']) ?>" style="height:50px;border-radius:8px;border:1px solid #e2e8f0">
+                            <img src="<?= htmlspecialchars(mediaUrl($s['school_logo'])) ?>" style="height:50px;border-radius:8px;border:1px solid #e2e8f0">
                             <span style="font-size:13px;color:#64748b">Current logo</span>
                         </div>
                         <?php endif; ?>

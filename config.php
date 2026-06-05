@@ -89,7 +89,27 @@ function saveUploadedFile($file) {
     if (!move_uploaded_file($file['tmp_name'], $destination)) {
         return null;
     }
-    return UPLOADS_URL . '/' . $filename;
+    // Store a host-independent relative path so the file works on any
+    // deployment (localhost, tunnel, production) and can be committed to git.
+    return 'uploads/' . $filename;
+}
+
+// Build a usable URL for a stored media path.
+// Handles legacy absolute URLs (e.g. http://localhost/school/uploads/x.png) by
+// re-basing them onto the current APP_URL, and relative paths (uploads/x.png).
+function mediaUrl($value) {
+    if (empty($value)) return '';
+    $base = rtrim(APP_URL, '/');
+    if (preg_match('#^https?://#i', $value)) {
+        // Re-base any uploaded file onto the current host so old localhost
+        // URLs stored in the DB still resolve correctly.
+        $pos = strpos($value, '/uploads/');
+        if ($pos !== false) {
+            return $base . substr($value, $pos);
+        }
+        return $value; // external image URL, leave as-is
+    }
+    return $base . '/' . ltrim($value, '/');
 }
 
 // Format date

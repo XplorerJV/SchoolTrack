@@ -16,7 +16,7 @@ CREATE TABLE `users` (
   `name` varchar(100) NOT NULL,
   `email` varchar(150) NOT NULL,
   `password` varchar(255) NOT NULL,
-  `role` enum('admin','principal','teacher') NOT NULL DEFAULT 'teacher',
+  `role` enum('superadmin','admin','principal','teacher') NOT NULL DEFAULT 'teacher',
   `assigned_principals` int(11) DEFAULT NULL,
   `phone` varchar(20) DEFAULT NULL,
   `subject` varchar(100) DEFAULT NULL,
@@ -149,11 +149,14 @@ INSERT INTO `settings` (`setting_key`,`setting_value`,`description`) VALUES
 ('email_api_url','',''),
 ('email_api_key','',''),
 ('email_api_header','Authorization',''),
+('sms_notifications','0','Enable/disable SMS notifications'),
+('subscription_plan','Free','Current subscription plan for the school'),
 ('school_logo','http://localhost/school/uploads/upload_6a0978df24867.png','')
 ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value);
 
 -- Users (Admin, Principal, 10 Teachers) — default password: password
 INSERT INTO `users` (`name`,`email`,`password`,`role`,`phone`,`subject`,`employee_id`,`is_active`) VALUES
+('Super Admin','superadmin@school.com','$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi','superadmin','','','SADM001',1),
 ('System Admin','admin@school.com','$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi','admin','','','ADM001',1),
 ('Principal John','principal@school.com','$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi','principal','','','PRI001',1),
 ('Rajesh Kumar','teacher@school.com','$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi','teacher','9876543201','Mathematics','TCH001',1),

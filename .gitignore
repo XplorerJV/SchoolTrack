@@ -1,6 +1,11 @@
-# Uploaded files
+# Uploaded files (keep image uploads like the school logo tracked so they
+# get pushed to GitHub and load on every deployment)
 uploads/*
 !uploads/.gitkeep
+!uploads/*.png
+!uploads/*.jpg
+!uploads/*.jpeg
+!uploads/*.svg
 
 # Temp/setup scripts (remove after use)
 generate_sql.php

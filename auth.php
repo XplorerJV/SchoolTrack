@@ -86,6 +86,7 @@ function auditLog($userId, $action, $module, $description, $oldVal = null, $newV
 // Get redirect by role
 function getRoleDashboard($role) {
     switch ($role) {
+        case 'superadmin': return 'superadmin/dashboard.php';
         case 'admin':     return 'admin/dashboard.php';
         case 'principal': return 'principal/dashboard.php';
         case 'teacher':   return 'teacher/dashboard.php';

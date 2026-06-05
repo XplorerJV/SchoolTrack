@@ -3,10 +3,15 @@
 $user = getCurrentUser();
 $role = $user['role'] ?? '';
 $schoolName = getSetting('school_name') ?: APP_NAME;
-$schoolLogo = getSetting('school_logo');
+$schoolLogo = mediaUrl(getSetting('school_logo'));
 $schoolAddress = getSetting('school_address');
 $navItems = [];
-if ($role === 'admin') {
+if ($role === 'superadmin') {
+    $navItems = [
+        ['url'=>'dashboard.php','icon'=>'grid','label'=>'Dashboard'],
+        ['url'=>'subscription.php','icon'=>'credit-card','label'=>'Subscription'],
+    ];
+} elseif ($role === 'admin') {
     $navItems = [
         ['url'=>'dashboard.php','icon'=>'grid','label'=>'Dashboard'],
         ['url'=>'class-folders.php','icon'=>'folder','label'=>'Class Folders'],
@@ -96,6 +101,12 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             <div class="page-title"><?= htmlspecialchars($pageTitle ?? 'Dashboard') ?></div>
         </div>
         <div style="display:flex;align-items:center;gap:12px;">
+            <?php if (in_array($role, ['admin','teacher','principal'])): ?>
+            <a href="<?= APP_URL ?>/mail-tester.php" target="_blank" rel="noopener" class="email-btn"
+               style="display:inline-flex;align-items:center;gap:6px;background:#38bdf8;color:#0f172a;font-weight:600;font-size:13px;padding:8px 14px;border-radius:8px;text-decoration:none;">
+                <i data-feather="mail" style="width:16px;height:16px;"></i> Email
+            </a>
+            <?php endif; ?>
             <span style="font-size:13px;color:#64748b;"><?= date('l, d M Y') ?></span>
         </div>
     </div>
