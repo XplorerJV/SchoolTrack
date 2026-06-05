@@ -8,7 +8,7 @@ if (isLoggedIn()) {
 
 $schoolName    = getSetting('school_name') ?: 'Springfield Public School';
 $schoolAddress = getSetting('school_address') ?: '';
-$schoolLogo    = getSetting('school_logo') ?: '';
+$schoolLogo    = mediaUrl(getSetting('school_logo'));
 
 // Fetch teachers for quick-select
 $db = getDB();
